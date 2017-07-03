@@ -3,10 +3,8 @@ package com.tanjinc.playermanager;
 import android.content.Context;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.Window;
 import android.widget.Button;
 import android.widget.FrameLayout;
 
@@ -18,8 +16,9 @@ public class MainActivity extends AppCompatActivity {
     private Button mButton;
     private Button mSwitchFullBtn;
     private boolean mIsFirst = true;
-    private boolean mIsFull;
     private Context mContext;
+
+    private VideoPlayer mVideoPlayer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,7 +33,8 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 //3. 将原来的textureView添加到新控件
                 mIsFirst = !mIsFirst;
-                VideoPlayerManager.getInstance().setRootView(mIsFirst ? mVideoRootView : mVideoRootView2);
+                mVideoPlayer.setRootView(mIsFirst ? mVideoRootView : mVideoRootView2);
+
 
             }
         });
@@ -46,29 +46,33 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 // 切换全屏
                 ViewGroup vp = (ViewGroup) getWindow().getDecorView();
-                VideoPlayerManager.getInstance().setRootView(vp);
-                mIsFull = true;
+//                MediaPlayerManager.getInstance().setRootView(vp);
+
             }
         });
 
-        mTextureView1 = new ResizeTextureView(this);
-        //1. 保存textureview,切换时,直接将保存好的textureview add到目标控件
-        //2. 设置Listener, 只有textureview准备好了才能播
-        VideoPlayerManager.getInstance().setTextureView(mTextureView1);
-        VideoPlayerManager.getInstance().setRootView(mVideoRootView);
+        mVideoPlayer = new VideoPlayer(MainActivity.this, mVideoRootView);
+
     }
 
+    @Override
+    protected void onResume() {
+        if (mVideoPlayer != null) {
+//            mVideoPlayer.onResume();
+        }
+        super.onResume();
+    }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        VideoPlayerManager.getInstance().release();
+        mVideoPlayer.onCompletion();
     }
 
     @Override
     public void onBackPressed() {
-        if (mIsFull) {
-            VideoPlayerManager.getInstance().setRootView(mVideoRootView);
+        if (mVideoPlayer.isFull()) {
+            mVideoPlayer.exitFull();
             return;
         }
         super.onBackPressed();

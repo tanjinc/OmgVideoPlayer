@@ -10,6 +10,7 @@ import android.view.Surface;
 import android.view.TextureView;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
+import android.widget.MediaController;
 import android.widget.RelativeLayout;
 
 import java.lang.reflect.Method;
@@ -18,16 +19,16 @@ import java.util.Map;
 /**
  * Created by tanjincheng on 17/6/28.
  */
-public class VideoPlayerManager implements TextureView.SurfaceTextureListener, MediaPlayer.OnPreparedListener,
+public class MediaPlayerManager implements TextureView.SurfaceTextureListener, MediaPlayer.OnPreparedListener,
         MediaPlayer.OnVideoSizeChangedListener,
         MediaPlayer.OnBufferingUpdateListener,
         MediaPlayer.OnSeekCompleteListener,
         MediaPlayer.OnInfoListener,
         MediaPlayer.OnErrorListener,
         MediaPlayer.OnCompletionListener{
-    private static final String TAG = "VideoPlayerManager";
+    private static final String TAG = "MediaPlayerManager";
 
-    private static VideoPlayerManager sInstance;
+    private static MediaPlayerManager sInstance;
     private SurfaceTexture mSurfaceTexture;
     private ResizeTextureView mTextureView;
     private Uri mUri;
@@ -35,14 +36,14 @@ public class VideoPlayerManager implements TextureView.SurfaceTextureListener, M
 
     public MediaPlayer mediaPlayer;
 
-    public static VideoPlayerManager getInstance() {
+    public static MediaPlayerManager getInstance() {
         if (sInstance == null) {
-            sInstance = new VideoPlayerManager();
+            sInstance = new MediaPlayerManager();
         }
         return sInstance;
     }
 
-    private VideoPlayerManager() {
+    private MediaPlayerManager() {
         mediaPlayer = new MediaPlayer();
     }
 
@@ -72,8 +73,12 @@ public class VideoPlayerManager implements TextureView.SurfaceTextureListener, M
     }
 
     public void release() {
-        mediaPlayer.release();
-        mSurfaceTexture.release();
+        if (mediaPlayer != null) {
+            mediaPlayer.release();
+        }
+        if (mSurfaceTexture != null) {
+            mSurfaceTexture.release();
+        }
         mTextureView = null;
         mSurfaceTexture = null;
 
@@ -81,21 +86,6 @@ public class VideoPlayerManager implements TextureView.SurfaceTextureListener, M
     public void setTextureView(ResizeTextureView textureView) {
         mTextureView = textureView;
         mTextureView.setSurfaceTextureListener(this);
-    }
-
-
-//    public void removeTextureView() {
-//        Log.d(TAG, "video removeTexutreView: ");
-//        if (mTextureView != null && mTextureView.getParent() != null) {
-//            ((ViewGroup) mTextureView.getParent()).removeView(mTextureView);
-//        }
-//    }
-
-    public void setRootView(ViewGroup parent, ViewGroup.LayoutParams lp) {
-        if (mTextureView != null && mTextureView.getParent() != null) {
-            ((ViewGroup) mTextureView.getParent()).removeView(mTextureView);
-        }
-        parent.addView(mTextureView, lp);
     }
 
     /**
