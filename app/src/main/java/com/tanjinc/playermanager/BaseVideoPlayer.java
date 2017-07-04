@@ -24,7 +24,7 @@ import java.util.TimerTask;
 public  abstract class BaseVideoPlayer extends FrameLayout implements View.OnClickListener, View.OnTouchListener, SeekBar.OnSeekBarChangeListener, MediaController.MediaPlayerControl{
 
     private static final String TAG = "BaseVideoPlayer";
-
+    private static final int MSG_PROCESS = 100;
     //ui
     private View mStartBtn;
     private View mSwitchBtn;
@@ -70,23 +70,28 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements View.OnCli
         mTextureView = new ResizeTextureView(context);
         MediaPlayerManager.getInstance().setTextureView(mTextureView);
         isFull = false;
-        mHandler = new Handler();
     }
 
     private Handler mHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
-
+            switch(msg.what) {
+                case MSG_PROCESS:
+                    mCurrentPositionTv.setText(Utils.stringForTime(getCurrentPosition()));
+                    mDurationTv.setText(Utils.stringForTime(getDuration()));
+                    mHandler.sendEmptyMessageDelayed(MSG_PROCESS, 1000);
+                    break;
+                default:
+                    break;
+            }
             super.handleMessage(msg);
         }
     };
 
-    private Timer mProcessTimer = new Timer();
-    private TimerTask mTimerTask = new TimerTask() {
+    private Runnable mProgressRunnable = new Runnable() {
         @Override
         public void run() {
-            mCurrentPositionTv.setText(String.valueOf(getCurrentPosition()));
-            mDurationTv.setText(String.valueOf(getDuration()));
+            mHandler.sendEmptyMessage(MSG_PROCESS);
         }
     };
 
@@ -133,7 +138,7 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements View.OnCli
                     pause();
                 }
                 break;
-            case R.id.switch_btn:
+            case R.id.switch_full_btn:
                 switchToFull();
                 break;
             default:
@@ -175,10 +180,15 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements View.OnCli
         }
     }
 
+    public void onDestroy() {
+        MediaPlayerManager.getInstance().release();
+        setScreenOn(false);
+        mHandler.removeCallbacks(null);
+        mContext = null;
+    }
     public void onCompletion(){
         MediaPlayerManager.getInstance().release();
         setScreenOn(false);
-        mProcessTimer.cancel();
         mContext = null;
     }
 
@@ -197,14 +207,14 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements View.OnCli
     @Override
     public void start() {
         setScreenOn(true);
-        mProcessTimer.schedule(mTimerTask, 0, 1000);
-
+        mHandler.post(mProgressRunnable);
         MediaPlayerManager.getInstance().mediaPlayer.start();
     }
 
     @Override
     public void pause() {
         setScreenOn(false);
+        mHandler.removeCallbacks(mProgressRunnable);
         MediaPlayerManager.getInstance().mediaPlayer.pause();
     }
 
