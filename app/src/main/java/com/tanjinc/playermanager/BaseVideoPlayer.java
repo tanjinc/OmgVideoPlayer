@@ -1,6 +1,8 @@
 package com.tanjinc.playermanager;
 
 import android.content.Context;
+import android.os.Handler;
+import android.os.Message;
 import android.support.annotation.LayoutRes;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -9,15 +11,26 @@ import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.MediaController;
+import android.widget.SeekBar;
+import android.widget.TextView;
+
+import java.util.Date;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * Created by tanjincheng on 17/7/1.
  */
-public abstract class BaseVideoPlayer extends FrameLayout implements View.OnClickListener, View.OnTouchListener, MediaController.MediaPlayerControl{
+public  abstract class BaseVideoPlayer extends FrameLayout implements View.OnClickListener, View.OnTouchListener, SeekBar.OnSeekBarChangeListener, MediaController.MediaPlayerControl{
 
     private static final String TAG = "BaseVideoPlayer";
+
+    //ui
     private View mStartBtn;
     private View mSwitchBtn;
+    private TextView mCurrentPositionTv;
+    private TextView mDurationTv;
+    private SeekBar mSeekbar;
     private ViewGroup mVideoContainer;
 
     private ViewGroup mFirstVideoRoot;
@@ -30,6 +43,8 @@ public abstract class BaseVideoPlayer extends FrameLayout implements View.OnClic
     private boolean mScreenOn = true;
 
     public VideoState mVideoState;
+
+
     public enum VideoState {
         Playing,
         Pause,
@@ -55,7 +70,25 @@ public abstract class BaseVideoPlayer extends FrameLayout implements View.OnClic
         mTextureView = new ResizeTextureView(context);
         MediaPlayerManager.getInstance().setTextureView(mTextureView);
         isFull = false;
+        mHandler = new Handler();
     }
+
+    private Handler mHandler = new Handler() {
+        @Override
+        public void handleMessage(Message msg) {
+
+            super.handleMessage(msg);
+        }
+    };
+
+    private Timer mProcessTimer = new Timer();
+    private TimerTask mTimerTask = new TimerTask() {
+        @Override
+        public void run() {
+            mCurrentPositionTv.setText(String.valueOf(getCurrentPosition()));
+            mDurationTv.setText(String.valueOf(getDuration()));
+        }
+    };
 
     /**
      * 设置整个videoplayer的父控件,包括video,和controller
@@ -76,8 +109,12 @@ public abstract class BaseVideoPlayer extends FrameLayout implements View.OnClic
         mVideoContainer = (ViewGroup) findViewById(R.id.video_container);
         mStartBtn = findViewById(R.id.start_btn);
         mStartBtn.setOnClickListener(this);
-        mSwitchBtn = findViewById(R.id.switch_btn);
+        mSwitchBtn = findViewById(R.id.switch_full_btn);
         mSwitchBtn.setOnClickListener(this);
+        mCurrentPositionTv = (TextView) findViewById(R.id.video_position_tv);
+        mDurationTv = (TextView) findViewById(R.id.video_duration_tv);
+        mSeekbar = (SeekBar) findViewById(R.id.video_seekbar);
+        mSeekbar.setOnSeekBarChangeListener(this);
         MediaPlayerManager.getInstance().setRootView(mVideoContainer);
     }
 
@@ -90,7 +127,11 @@ public abstract class BaseVideoPlayer extends FrameLayout implements View.OnClic
         int id = view.getId();
         switch (id) {
             case R.id.start_btn:
-                start();
+                if(!isPlaying()) {
+                    start();
+                } else {
+                    pause();
+                }
                 break;
             case R.id.switch_btn:
                 switchToFull();
@@ -137,6 +178,7 @@ public abstract class BaseVideoPlayer extends FrameLayout implements View.OnClic
     public void onCompletion(){
         MediaPlayerManager.getInstance().release();
         setScreenOn(false);
+        mProcessTimer.cancel();
         mContext = null;
     }
 
@@ -155,13 +197,15 @@ public abstract class BaseVideoPlayer extends FrameLayout implements View.OnClic
     @Override
     public void start() {
         setScreenOn(true);
+        mProcessTimer.schedule(mTimerTask, 0, 1000);
+
         MediaPlayerManager.getInstance().mediaPlayer.start();
     }
 
     @Override
     public void pause() {
         setScreenOn(false);
-        MediaPlayerManager.getInstance().mediaPlayer.start();
+        MediaPlayerManager.getInstance().mediaPlayer.pause();
     }
 
     @Override
@@ -207,5 +251,21 @@ public abstract class BaseVideoPlayer extends FrameLayout implements View.OnClic
     @Override
     public int getAudioSessionId() {
         return 0;
+    }
+
+
+    @Override
+    public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
+
+    }
+
+    @Override
+    public void onStartTrackingTouch(SeekBar seekBar) {
+
+    }
+
+    @Override
+    public void onStopTrackingTouch(SeekBar seekBar) {
+
     }
 }
