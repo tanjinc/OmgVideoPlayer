@@ -1,6 +1,7 @@
 package com.tanjinc.playermanager;
 
 import android.content.Context;
+import android.media.MediaPlayer;
 import android.os.Handler;
 import android.os.Message;
 import android.support.annotation.LayoutRes;
@@ -11,17 +12,24 @@ import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.MediaController;
+import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
-import java.util.Date;
-import java.util.Timer;
-import java.util.TimerTask;
 
 /**
  * Created by tanjincheng on 17/7/1.
  */
-public  abstract class BaseVideoPlayer extends FrameLayout implements View.OnClickListener, View.OnTouchListener, SeekBar.OnSeekBarChangeListener, MediaController.MediaPlayerControl{
+public  abstract class BaseVideoPlayer extends FrameLayout implements
+        View.OnClickListener,
+        View.OnTouchListener,
+        SeekBar.OnSeekBarChangeListener,
+        MediaPlayer.OnBufferingUpdateListener,
+        MediaPlayer.OnCompletionListener,
+        MediaPlayer.OnErrorListener,
+        MediaPlayer.OnInfoListener,
+        MediaPlayer.OnPreparedListener,
+        MediaController.MediaPlayerControl{
 
     private static final String TAG = "BaseVideoPlayer";
     private static final int MSG_PROCESS = 100;
@@ -30,17 +38,24 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements View.OnCli
     private View mSwitchBtn;
     private TextView mCurrentPositionTv;
     private TextView mDurationTv;
+    private ProgressBar mLoadingView;
     private SeekBar mSeekbar;
     private ViewGroup mVideoContainer;
 
     private ViewGroup mFirstVideoRoot;
     private ViewGroup mVideoPlayerRoot;
 
+    private static int SEEK_MAX = 1000;
+
     private @LayoutRes int mFirstLayoutId;
     private @LayoutRes int mSecondLayoutId;
 
     private boolean isFull;
     private boolean mScreenOn = true;
+
+    private int mCurrentPosition;
+    private int mDuration;
+    private int mBufferPercent;
 
     public VideoState mVideoState;
 
@@ -69,6 +84,10 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements View.OnCli
     private void init(Context context) {
         mTextureView = new ResizeTextureView(context);
         MediaPlayerManager.getInstance().setTextureView(mTextureView);
+        MediaPlayerManager.getInstance().setOnInfoListener(this);
+        MediaPlayerManager.getInstance().setOnBufferingUpdateListener(this);
+        MediaPlayerManager.getInstance().setOnCompletionListener(this);
+        MediaPlayerManager.getInstance().setOnPreparedListener(this);
         isFull = false;
     }
 
@@ -77,8 +96,17 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements View.OnCli
         public void handleMessage(Message msg) {
             switch(msg.what) {
                 case MSG_PROCESS:
-                    mCurrentPositionTv.setText(Utils.stringForTime(getCurrentPosition()));
-                    mDurationTv.setText(Utils.stringForTime(getDuration()));
+                    mCurrentPosition = getCurrentPosition();
+                    mDuration = getDuration();
+                    mCurrentPositionTv.setText(Utils.stringForTime(mCurrentPosition));
+                    mDurationTv.setText(Utils.stringForTime(mDuration));
+                    if (mSeekbar != null) {
+                        if (mDuration > 0) {
+                            mSeekbar.setProgress(mCurrentPosition * SEEK_MAX / mDuration);
+                        } else {
+                            mSeekbar.setProgress(0);
+                        }
+                    }
                     mHandler.sendEmptyMessageDelayed(MSG_PROCESS, 1000);
                     break;
                 default:
@@ -113,18 +141,92 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements View.OnCli
         View.inflate(mContext, id, this);
         mVideoContainer = (ViewGroup) findViewById(R.id.video_container);
         mStartBtn = findViewById(R.id.start_btn);
-        mStartBtn.setOnClickListener(this);
+        if (mStartBtn != null) {
+            mStartBtn.setOnClickListener(this);
+        }
         mSwitchBtn = findViewById(R.id.switch_full_btn);
-        mSwitchBtn.setOnClickListener(this);
+        if (mSwitchBtn != null) {
+            mSwitchBtn.setOnClickListener(this);
+        }
+        mLoadingView = (ProgressBar) findViewById(R.id.video_loading_view);
+        if (mLoadingView != null) {
+            mLoadingView.setVisibility(GONE);
+        }
+
         mCurrentPositionTv = (TextView) findViewById(R.id.video_position_tv);
         mDurationTv = (TextView) findViewById(R.id.video_duration_tv);
         mSeekbar = (SeekBar) findViewById(R.id.video_seekbar);
-        mSeekbar.setOnSeekBarChangeListener(this);
+        if (mSeekbar != null) {
+            mSeekbar.setMax(SEEK_MAX);
+            if (mDuration > 0) {
+                mSeekbar.setProgress(mCurrentPosition * SEEK_MAX / mDuration);
+            } else {
+                mSeekbar.setProgress(0);
+            }
+            mSeekbar.setSecondaryProgress(mBufferPercent * SEEK_MAX / 100);
+            mSeekbar.setOnSeekBarChangeListener(this);
+        }
         MediaPlayerManager.getInstance().setRootView(mVideoContainer);
     }
 
     public void setScreenOnWhilePlaying(boolean screenOn) {
         mScreenOn = screenOn;
+    }
+
+    public void showLoading() {
+        if (mLoadingView != null) {
+            mLoadingView.setVisibility(VISIBLE);
+        }
+    }
+
+    public void hideLoading() {
+        if (mLoadingView != null) {
+            mLoadingView.setVisibility(GONE);
+        }
+    }
+
+    @Override
+    public void onBufferingUpdate(MediaPlayer mediaPlayer, int i) {
+        Log.d(TAG, "video onBufferingUpdate: i=" + i);
+        if (mSeekbar != null) {
+            mBufferPercent = i;
+            mSeekbar.setSecondaryProgress(mBufferPercent * SEEK_MAX / 100);
+        }
+    }
+
+    @Override
+    public boolean onError(MediaPlayer mediaPlayer, int i, int i1) {
+        Log.d(TAG, "video onError: error =  " + i);
+        return false;
+    }
+
+    @Override
+    public void onPrepared(MediaPlayer mediaPlayer) {
+        Log.d(TAG, "video onPrepared: ");
+        start();
+    }
+
+    @Override
+    public boolean onInfo(MediaPlayer mediaPlayer, int what, int ext) {
+        Log.d(TAG, "video onInfo: what = " + what);
+        switch(what) {
+            case MediaPlayer.MEDIA_INFO_BUFFERING_START:
+                showLoading();
+                break;
+            case MediaPlayer.MEDIA_INFO_BUFFERING_END:
+                hideLoading();
+                break;
+            case MediaPlayer.MEDIA_INFO_VIDEO_RENDERING_START:
+                hideLoading();
+                break;
+        }
+        return true;
+    }
+
+    @Override
+    public void onCompletion(MediaPlayer mediaPlayer) {
+        Log.d(TAG, "video onCompletion: ");
+        setScreenOn(false);
     }
 
     @Override
@@ -186,12 +288,10 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements View.OnCli
         mHandler.removeCallbacks(null);
         mContext = null;
     }
-    public void onCompletion(){
-        MediaPlayerManager.getInstance().release();
-        setScreenOn(false);
-        mContext = null;
-    }
 
+    public void setVideoPath(String videoPath) {
+        MediaPlayerManager.getInstance().setVideoPath(videoPath);
+    }
 
     private void setScreenOn(boolean isScreenOn) {
         if (Utils.scanForActivity(mContext) == null || !mScreenOn) {
@@ -265,17 +365,20 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements View.OnCli
 
 
     @Override
-    public void onProgressChanged(SeekBar seekBar, int i, boolean b) {
-
+    public void onProgressChanged(SeekBar seekBar, int i, boolean fromUser) {
+        if (fromUser) {
+            int progress = seekBar.getProgress();
+            seekTo(progress * mDuration / SEEK_MAX);
+        }
     }
 
     @Override
     public void onStartTrackingTouch(SeekBar seekBar) {
-
+        pause();
     }
 
     @Override
     public void onStopTrackingTouch(SeekBar seekBar) {
-
+        start();
     }
 }

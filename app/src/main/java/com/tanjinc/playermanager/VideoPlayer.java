@@ -11,11 +11,15 @@ import android.view.ViewGroup;
 public class VideoPlayer extends BaseVideoPlayer implements View.OnTouchListener{
     private Context mContext;
 
+    private String mPath = "http://video.mp.sj.360.cn/vod_zhushou/vod-shouzhu-bj/e604948bb5c58e88b95e25fb54846d6e.mp4";
 
     public VideoPlayer(Context context, ViewGroup viewGroup) {
         super(context, viewGroup);
         mContext = context;
         setContentView(R.layout.om_video_mini_layout);
+
+        setVideoPath(mPath);
+        start();
     }
 
 
