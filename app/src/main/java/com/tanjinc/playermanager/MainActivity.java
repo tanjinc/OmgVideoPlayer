@@ -56,9 +56,17 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onPause() {
+        if (mVideoPlayer != null) {
+            mVideoPlayer.pause();
+        }
+        super.onPause();
+    }
+
+    @Override
     protected void onResume() {
         if (mVideoPlayer != null) {
-//            mVideoPlayer.onResume();
+            mVideoPlayer.start();
         }
         super.onResume();
     }

@@ -1,6 +1,7 @@
 package com.tanjinc.playermanager;
 
 import android.content.Context;
+import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Handler;
 import android.os.Message;
@@ -56,6 +57,7 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
     private int mCurrentPosition;
     private int mDuration;
     private int mBufferPercent;
+    private AudioManager mAudioManager;
 
     public VideoState mVideoState;
 
@@ -88,6 +90,8 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
         MediaPlayerManager.getInstance().setOnBufferingUpdateListener(this);
         MediaPlayerManager.getInstance().setOnCompletionListener(this);
         MediaPlayerManager.getInstance().setOnPreparedListener(this);
+
+        mAudioManager = (AudioManager) getContext().getSystemService(Context.AUDIO_SERVICE);
         isFull = false;
     }
 
@@ -280,6 +284,16 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
         if (mFirstLayoutId != 0) {
             setContentView(mFirstLayoutId);
         }
+        start();
+    }
+
+    public void onPause() {
+        if (isPlaying()) {
+            pause();
+        }
+    }
+    public void release() {
+        MediaPlayerManager.getInstance().release();
     }
 
     public void onDestroy() {
@@ -304,9 +318,34 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
             Utils.scanForActivity(mContext).getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
         }
     }
+
+    private AudioManager.OnAudioFocusChangeListener mOnAudioFocusChangeListener = new AudioManager.OnAudioFocusChangeListener() {
+        @Override
+        public void onAudioFocusChange(int focusChange) {
+            Log.d(TAG, "video onAudioFocusChange: " + focusChange);
+            switch (focusChange) {
+                case AudioManager.AUDIOFOCUS_GAIN:
+                    break;
+                case AudioManager.AUDIOFOCUS_LOSS:
+                    release();
+                    Log.d(TAG, "video AUDIOFOCUS_LOSS [" + this.hashCode() + "]");
+                    break;
+                case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT:
+                    if (isPlaying()) {
+                        pause();
+                    }
+                    Log.d(TAG, "video AUDIOFOCUS_LOSS_TRANSIENT [" + this.hashCode() + "]");
+                    break;
+                case AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK:
+                    break;
+            }
+        }
+    };
+
     @Override
     public void start() {
         setScreenOn(true);
+        mAudioManager.requestAudioFocus(mOnAudioFocusChangeListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
         mHandler.post(mProgressRunnable);
         MediaPlayerManager.getInstance().mediaPlayer.start();
     }
@@ -314,6 +353,7 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
     @Override
     public void pause() {
         setScreenOn(false);
+        mAudioManager.abandonAudioFocus(mOnAudioFocusChangeListener);
         mHandler.removeCallbacks(mProgressRunnable);
         MediaPlayerManager.getInstance().mediaPlayer.pause();
     }
@@ -335,7 +375,7 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
 
     @Override
     public boolean isPlaying() {
-        return  MediaPlayerManager.getInstance().mediaPlayer.isPlaying();
+        return  MediaPlayerManager.getInstance().mediaPlayer != null && MediaPlayerManager.getInstance().mediaPlayer.isPlaying();
     }
 
     @Override

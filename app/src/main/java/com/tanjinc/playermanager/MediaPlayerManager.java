@@ -172,7 +172,6 @@ public class MediaPlayerManager implements TextureView.SurfaceTextureListener, M
     public void onPrepared(MediaPlayer mediaPlayer) {
         if (mOnPreparedListener != null) {
             mOnPreparedListener.onPrepared(mediaPlayer);
-            return;
         }
     }
 
