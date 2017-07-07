@@ -64,7 +64,7 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
     private static int SEEK_MAX = 1000;
 
     private @LayoutRes int mFirstLayoutId;
-    private @LayoutRes int mSecondLayoutId;
+    private @LayoutRes int mFullLayoutId;
 
     private boolean isFull;
     private boolean mScreenOn = true;
@@ -81,6 +81,7 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
     private Context mContext;
 
     public static final String ACTION_SWITCH_TO_FULL = "action_switch_to_full";
+    public static final String FULL_SCREEN_LAYOUT_ID = "full_screen_layout_id";
 
     public BaseVideoPlayer(Context context, ViewGroup rootView) {
         super(context);
@@ -146,6 +147,10 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
             ((ViewGroup) getParent()).removeView(this);
         }
         mVideoPlayerRoot.addView(this);
+    }
+
+    public void setFullLayoutId(@LayoutRes int id) {
+        mFullLayoutId = id;
     }
 
     public void setContentView(@LayoutRes int id) {
@@ -274,14 +279,15 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
 
     public void switchToFull() {
         isFull = true;
-        boolean new_activity = false;
+        boolean new_activity = true;
         if (!new_activity) {
             setRootView(((ViewGroup) Utils.scanForActivity(mContext).getWindow().getDecorView()));
             setContentView(R.layout.om_video_fullscreen_layout);
         } else {
+            VideoPlayerManager.setFirstPlayer(this);
             Intent intent = new Intent(mContext, VideoWindowActivity.class);
             intent.putExtra("action", ACTION_SWITCH_TO_FULL);
-            intent.putExtra("layout_id", mSecondLayoutId);
+            intent.putExtra("full_layout_id", mFullLayoutId);
             intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             mContext.startActivity(intent);
         }
@@ -289,6 +295,7 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
 
     public void exitFull() {
         isFull = false;
+        ((ViewGroup)getParent()).removeView(this);
         setRootView(mFirstVideoRoot);
         setContentView(R.layout.om_video_mini_layout);
     }
@@ -316,6 +323,7 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
         mHandler.removeMessages(MSG_PROCESS);
         mHandler.removeCallbacks(mProgressRunnable);
         MediaPlayerManager.getInstance().release();
+        VideoPlayerManager.releaseAll();
         setScreenOn(false);
         mContext = null;
     }

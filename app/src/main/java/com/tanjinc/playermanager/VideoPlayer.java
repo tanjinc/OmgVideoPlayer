@@ -16,7 +16,8 @@ public class VideoPlayer extends BaseVideoPlayer implements View.OnTouchListener
     public VideoPlayer(Context context, ViewGroup viewGroup) {
         super(context, viewGroup);
         mContext = context;
-        setContentView(R.layout.om_video_mini_layout);
+        setContentView(R.layout.om_video_mini_layout);  //设置小窗布局
+        setFullLayoutId(R.layout.om_video_fullscreen_layout);   //设置全局布局
 
         setVideoPath(mPath);
         setVideoThumb("http://pic28.nipic.com/20130417/3822951_115921742000_2.jpg");
