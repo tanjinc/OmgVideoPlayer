@@ -1,6 +1,5 @@
-package com.tanjinc.playermanager;
+package com.tanjinc.playermanager.utils;
 
-import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.os.AsyncTask;
@@ -84,6 +83,7 @@ public class ImageLoader {
                 return;
             }
             mImageView.setImageBitmap(Bitmap.createBitmap(bitmap, 0, 0, mImageViewWidth, mImageViewHeight));
+            mImageView = null;
         }
     }
 }

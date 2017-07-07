@@ -1,6 +1,7 @@
 package com.tanjinc.playermanager;
 
 import android.content.Context;
+import android.content.Intent;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.os.Handler;
@@ -17,6 +18,9 @@ import android.widget.MediaController;
 import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.TextView;
+
+import com.tanjinc.playermanager.utils.ImageLoader;
+import com.tanjinc.playermanager.utils.Utils;
 
 
 /**
@@ -265,17 +269,22 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
 
     @Override
     public boolean onTouch(View view, MotionEvent motionEvent) {
-        return false;
+        return true;
     }
 
     public void switchToFull() {
         isFull = true;
-        setRootView(((ViewGroup)Utils.scanForActivity(mContext).getWindow().getDecorView()));
-        setContentView(R.layout.om_video_fullscreen_layout);
-//                Intent intent = new Intent(mContext, VideoWindowActivity.class);
-//                intent.putExtra("action", ACTION_SWITCH_TO_FULL);
-//                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-//                mContext.startActivity(intent);
+        boolean new_activity = false;
+        if (!new_activity) {
+            setRootView(((ViewGroup) Utils.scanForActivity(mContext).getWindow().getDecorView()));
+            setContentView(R.layout.om_video_fullscreen_layout);
+        } else {
+            Intent intent = new Intent(mContext, VideoWindowActivity.class);
+            intent.putExtra("action", ACTION_SWITCH_TO_FULL);
+            intent.putExtra("layout_id", mSecondLayoutId);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            mContext.startActivity(intent);
+        }
     }
 
     public void exitFull() {

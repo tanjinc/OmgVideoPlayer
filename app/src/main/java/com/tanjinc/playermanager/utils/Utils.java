@@ -1,4 +1,4 @@
-package com.tanjinc.playermanager;
+package com.tanjinc.playermanager.utils;
 
 import android.app.Activity;
 import android.content.Context;

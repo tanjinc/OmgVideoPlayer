@@ -105,7 +105,10 @@ public class MediaPlayerManager implements TextureView.SurfaceTextureListener, M
         }
         mTextureView = null;
         mSurfaceTexture = null;
-
+        mOnBufferingUpdateListener = null;
+        mOnCompletionListener = null;
+        mOnInfoListener = null;
+        mOnPreparedListener = null;
     }
     public void setTextureView(ResizeTextureView textureView) {
         mTextureView = textureView;
