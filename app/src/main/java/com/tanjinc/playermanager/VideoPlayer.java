@@ -19,6 +19,7 @@ public class VideoPlayer extends BaseVideoPlayer implements View.OnTouchListener
         setContentView(R.layout.om_video_mini_layout);
 
         setVideoPath(mPath);
+        setVideoThumb("http://pic28.nipic.com/20130417/3822951_115921742000_2.jpg");
         start();
     }
 

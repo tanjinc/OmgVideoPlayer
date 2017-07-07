@@ -97,6 +97,7 @@ public class MediaPlayerManager implements TextureView.SurfaceTextureListener, M
 
     public void release() {
         if (mediaPlayer != null) {
+            mediaPlayer.setOnBufferingUpdateListener(null);
             mediaPlayer.release();
         }
         if (mSurfaceTexture != null) {

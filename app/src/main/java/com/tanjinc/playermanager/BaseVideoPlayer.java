@@ -12,6 +12,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
+import android.widget.ImageView;
 import android.widget.MediaController;
 import android.widget.ProgressBar;
 import android.widget.SeekBar;
@@ -34,12 +35,22 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
 
     private static final String TAG = "BaseVideoPlayer";
     private static final int MSG_PROCESS = 100;
+
+    private static final int STATE_ERROR              = -1;
+    private static final int STATE_IDLE               = 0;
+    private static final int STATE_PREPARING          = 1;
+    private static final int STATE_PREPARED           = 2;
+    private static final int STATE_PLAYING            = 3;
+    private static final int STATE_PAUSED             = 4;
+    private static final int STATE_PLAYBACK_COMPLETED = 5;
+
     //ui
     private View mStartBtn;
     private View mSwitchBtn;
     private TextView mCurrentPositionTv;
     private TextView mDurationTv;
     private ProgressBar mLoadingView;
+    private ImageView mVideoThumbView;
     private SeekBar mSeekbar;
     private ViewGroup mVideoContainer;
 
@@ -59,15 +70,8 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
     private int mBufferPercent;
     private AudioManager mAudioManager;
 
-    public VideoState mVideoState;
+    private int mCurrentState = STATE_IDLE;
 
-
-    public enum VideoState {
-        Playing,
-        Pause,
-        Complete,
-        Release
-    }
 
     private ResizeTextureView mTextureView;
     private Context mContext;
@@ -170,6 +174,8 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
             mSeekbar.setSecondaryProgress(mBufferPercent * SEEK_MAX / 100);
             mSeekbar.setOnSeekBarChangeListener(this);
         }
+        mVideoThumbView = (ImageView) findViewById(R.id.video_thumb);
+
         MediaPlayerManager.getInstance().setRootView(mVideoContainer);
     }
 
@@ -207,6 +213,7 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
     @Override
     public void onPrepared(MediaPlayer mediaPlayer) {
         Log.d(TAG, "video onPrepared: ");
+        mCurrentState = STATE_PREPARED;
         start();
     }
 
@@ -222,6 +229,9 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
                 break;
             case MediaPlayer.MEDIA_INFO_VIDEO_RENDERING_START:
                 hideLoading();
+                if (mVideoThumbView != null && mVideoThumbView.isShown()) {
+                    mVideoThumbView.setVisibility(GONE);
+                }
                 break;
         }
         return true;
@@ -230,6 +240,7 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
     @Override
     public void onCompletion(MediaPlayer mediaPlayer) {
         Log.d(TAG, "video onCompletion: ");
+        mCurrentState = STATE_PLAYBACK_COMPLETED;
         setScreenOn(false);
     }
 
@@ -273,10 +284,6 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
         setContentView(R.layout.om_video_mini_layout);
     }
 
-    public VideoState getVideoState() {
-        return mVideoState;
-    }
-
     public boolean isFull() {
         return isFull;
     }
@@ -297,14 +304,25 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
     }
 
     public void onDestroy() {
+        mHandler.removeMessages(MSG_PROCESS);
+        mHandler.removeCallbacks(mProgressRunnable);
         MediaPlayerManager.getInstance().release();
         setScreenOn(false);
-        mHandler.removeCallbacks(null);
         mContext = null;
     }
 
     public void setVideoPath(String videoPath) {
         MediaPlayerManager.getInstance().setVideoPath(videoPath);
+        if (mVideoThumbView != null) {
+            mVideoThumbView.setVisibility(VISIBLE);
+        }
+        showLoading();
+    }
+
+    public void setVideoThumb(String thumbPath) {
+        if (mVideoThumbView != null) {
+            ImageLoader.getInstance().loadImage(thumbPath, mVideoThumbView, 250, 150);
+        }
     }
 
     private void setScreenOn(boolean isScreenOn) {
@@ -346,8 +364,11 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
     public void start() {
         setScreenOn(true);
         mAudioManager.requestAudioFocus(mOnAudioFocusChangeListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
-        mHandler.post(mProgressRunnable);
-        MediaPlayerManager.getInstance().mediaPlayer.start();
+        if (mCurrentState != STATE_IDLE) {
+            MediaPlayerManager.getInstance().mediaPlayer.start();
+            mHandler.post(mProgressRunnable);
+            mCurrentState = STATE_PLAYING;
+        }
     }
 
     @Override
@@ -356,16 +377,17 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
         mAudioManager.abandonAudioFocus(mOnAudioFocusChangeListener);
         mHandler.removeCallbacks(mProgressRunnable);
         MediaPlayerManager.getInstance().mediaPlayer.pause();
+        mCurrentState = STATE_PAUSED;
     }
 
     @Override
     public int getDuration() {
-        return MediaPlayerManager.getInstance().mediaPlayer.getDuration();
+        return isInPlaybackState() ? MediaPlayerManager.getInstance().mediaPlayer.getDuration() : -1;
     }
 
     @Override
     public int getCurrentPosition() {
-        return MediaPlayerManager.getInstance().mediaPlayer.getCurrentPosition();
+        return isInPlaybackState() ? MediaPlayerManager.getInstance().mediaPlayer.getCurrentPosition() : 0;
     }
 
     @Override
@@ -373,9 +395,14 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
         MediaPlayerManager.getInstance().mediaPlayer.seekTo(i);
     }
 
+    private boolean isInPlaybackState() {
+        return (mCurrentState != STATE_ERROR &&
+                mCurrentState != STATE_IDLE &&
+                mCurrentState != STATE_PREPARING);
+    }
     @Override
     public boolean isPlaying() {
-        return  MediaPlayerManager.getInstance().mediaPlayer != null && MediaPlayerManager.getInstance().mediaPlayer.isPlaying();
+        return  isInPlaybackState() && MediaPlayerManager.getInstance().mediaPlayer.isPlaying();
     }
 
     @Override
