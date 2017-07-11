@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+             android:background="#afcc5d5d"
+             android:padding="5dp"
+             android:layout_width="300dp"
+             android:layout_height="250dp">
+    <ImageView
+        android:id="@+id/thumb_img"
+        android:layout_width="300dp"
+        android:layout_height="250dp"
+        android:layout_gravity="center"/>
+</FrameLayout>
