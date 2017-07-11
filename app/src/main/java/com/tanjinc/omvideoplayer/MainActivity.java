@@ -58,6 +58,7 @@ public class MainActivity extends AppCompatActivity {
                 Log.d(TAG, "video onItemClick: " + viewHolder.root.getWidth() + " " +viewHolder.root.getHeight());
                 mVideoPlayer.setRootView(viewHolder.root);
                 mVideoPlayer.setVideoPath(mVideoAdapter.getItem(position).getVideoPath());
+                mVideoPlayer.setTitle(mVideoAdapter.getItem(position).getVideoTitle());
                 mVideoPlayer.start();
 
             }
@@ -70,22 +71,26 @@ public class MainActivity extends AppCompatActivity {
     private void setData() {
         mVideoItemList = new ArrayList<>();
         VideoItem item = new VideoItem();
+        item.setVideoTitle("王者荣耀视频");
         item.setVideoPath("http://video.mp.sj.360.cn/vod_zhushou/vod-shouzhu-bj/e604948bb5c58e88b95e25fb54846d6e.mp4");
         item.setThumbPath("http://pic28.nipic.com/20130417/3822951_115921742000_2.jpg");
         mVideoItemList.add(item);
 
         VideoItem item2 = new VideoItem();
+        item2.setVideoTitle("DNF视频2");
         item2.setVideoPath("http://video.mp.sj.360.cn/vod_zhushou/vod-shouzhu-bj/064b72f707e4edbecf824d105a8e7b94.mp4");
         item2.setThumbPath("http://p4.qhimg.com/t01be414a28e864dc80.jpg");
         mVideoItemList.add(item2);
 
 
         VideoItem item3 = new VideoItem();
+        item3.setVideoTitle("DNF视频3");
         item3.setVideoPath("http://video.mp.sj.360.cn/vod_zhushou/vod-shouzhu-bj/064b72f707e4edbecf824d105a8e7b94.mp4");
         item3.setThumbPath("http://p4.qhimg.com/t01be414a28e864dc80.jpg");
         mVideoItemList.add(item3);
 
         VideoItem item4 = new VideoItem();
+        item4.setVideoTitle("DNF视频4");
         item4.setVideoPath("http://video.mp.sj.360.cn/vod_zhushou/vod-shouzhu-bj/064b72f707e4edbecf824d105a8e7b94.mp4");
         item4.setThumbPath("http://p4.qhimg.com/t01be414a28e864dc80.jpg");
         mVideoItemList.add(item4);
@@ -129,6 +134,9 @@ public class MainActivity extends AppCompatActivity {
         String thumbPath;
         String videoPath;
 
+
+        String videoTitle;
+
         public VideoItem() {
 
         }
@@ -146,6 +154,15 @@ public class MainActivity extends AppCompatActivity {
 
         public void setVideoPath(String videoPath) {
             this.videoPath = videoPath;
+        }
+
+
+        public String getVideoTitle() {
+            return videoTitle;
+        }
+
+        public void setVideoTitle(String videoTitle) {
+            this.videoTitle = videoTitle;
         }
 
     }

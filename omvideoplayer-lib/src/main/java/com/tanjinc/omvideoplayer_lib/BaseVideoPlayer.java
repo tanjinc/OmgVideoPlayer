@@ -51,6 +51,7 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
     //ui
     protected View mStartBtn;
     protected View mSwitchBtn;
+    protected TextView mTitleTv;
     protected TextView mCurrentPositionTv;
     protected TextView mDurationTv;
     protected ProgressBar mLoadingView;
@@ -62,7 +63,7 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
 
     private static int SEEK_MAX = 1000;
 
-    private @LayoutRes int mFirstLayoutId;
+    private @LayoutRes int mMiniLayoutId;
     private @LayoutRes int mFullLayoutId;
 
     private boolean isFull;
@@ -76,6 +77,7 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
 
     private int mCurrentState = STATE_IDLE;
 
+    private String mVideoTitle;
 
     private ResizeTextureView mTextureView;
     private Context mContext;
@@ -151,13 +153,36 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
             Log.e(TAG, "video setRootView is null");
             return;
         }
-        mVideoPlayerRoot = videoPlayerRoot;
         mSaveVideoRoot = mVideoPlayerRoot;
+        mVideoPlayerRoot = videoPlayerRoot;
 
         if (getParent() != null) {
             ((ViewGroup) getParent()).removeView(this);
         }
-        mVideoPlayerRoot.addView(this, new ViewGroup.LayoutParams(videoPlayerRoot.getWidth(), videoPlayerRoot.getHeight()));
+        if (videoPlayerRoot.getWidth() == 0 || videoPlayerRoot.getHeight() == 0) {
+            mVideoPlayerRoot.addView(this, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
+        } else {
+            mVideoPlayerRoot.addView(this, new ViewGroup.LayoutParams(videoPlayerRoot.getWidth(), videoPlayerRoot.getHeight()));
+        }
+
+
+        if (isFull && mFullLayoutId != 0) {
+            setContentView(mFullLayoutId);
+        } else {
+            setContentView(mMiniLayoutId);
+        }
+
+    }
+
+    public void setTitle(String title) {
+        mVideoTitle = title;
+        if (mTitleTv != null) {
+            mTitleTv.setText(mVideoTitle);
+        }
+    }
+
+    public void setMiniLayoutId(@LayoutRes int id) {
+        mMiniLayoutId = id;
     }
 
     public void setFullLayoutId(@LayoutRes int id) {
@@ -189,6 +214,10 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
         mLoadingView = (ProgressBar) findViewById(R.id.video_loading_view);
         if (mLoadingView != null) {
             mLoadingView.setVisibility(GONE);
+        }
+        mTitleTv = (TextView) findViewById(R.id.video_title);
+        if (mTitleTv != null && mVideoTitle != null) {
+            mTitleTv.setText(mVideoTitle);
         }
 
         mCurrentPositionTv = (TextView) findViewById(R.id.video_position_tv);
@@ -327,18 +356,13 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
     public void exitFull() {
         isFull = false;
         mContext = mSaveContext;
+        mSaveContext = null;
         setRootView(mSaveVideoRoot);
         setContentView(R.layout.om_video_mini_layout);
     }
 
     public boolean isFull() {
         return isFull;
-    }
-    public void onResume() {
-        if (mFirstLayoutId != 0) {
-            setContentView(mFirstLayoutId);
-        }
-        start();
     }
 
     public void onPause() {
@@ -357,6 +381,8 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
         VideoPlayerManager.releaseAll();
         setScreenOn(false);
         mContext = null;
+        mSaveContext = null;
+        mSaveVideoRoot = null;
     }
 
     public void setVideoPath(String videoPath) {
