@@ -27,6 +27,18 @@ public class VideoWindowActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onPause() {
+        super.onPause();
+        if (mBaseVideoPlayer != null) {
+            if (mCurrentState == BaseVideoPlayer.STATE_PLAYING) {
+                mBaseVideoPlayer.start();
+            } else {
+                mBaseVideoPlayer.pause();
+            }
+        }
+    }
+
+    @Override
     protected void onResume() {
         super.onResume();
         if (mBaseVideoPlayer != null) {

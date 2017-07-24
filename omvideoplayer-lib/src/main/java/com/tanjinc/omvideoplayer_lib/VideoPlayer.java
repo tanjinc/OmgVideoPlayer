@@ -54,8 +54,5 @@ public class VideoPlayer extends BaseVideoPlayer implements View.OnTouchListener
         super.pause();
     }
 
-    @Override
-    public boolean onTouch(View view, MotionEvent motionEvent) {
-        return false;
-    }
+
 }

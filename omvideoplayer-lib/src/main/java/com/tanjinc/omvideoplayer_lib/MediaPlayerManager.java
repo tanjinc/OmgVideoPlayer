@@ -1,6 +1,7 @@
 package com.tanjinc.omvideoplayer_lib;
 
 import android.graphics.SurfaceTexture;
+import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
@@ -149,6 +150,7 @@ public class MediaPlayerManager implements TextureView.SurfaceTextureListener, M
             ((RelativeLayout.LayoutParams)layoutParams).addRule(RelativeLayout.CENTER_IN_PARENT);
         }
         parent.addView(mTextureView, layoutParams);
+        Drawable drawable= parent.getContext().getDrawable(R.drawable.ic_launcher);
 
     }
 

@@ -7,6 +7,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 
+import com.jakewharton.scalpel.ScalpelFrameLayout;
 import com.tanjinc.omvideoplayer.utils.ImageLoader;
 import com.tanjinc.playermanager.R;
 
@@ -48,7 +49,7 @@ public class VideoAdapter extends RecyclerView.Adapter<VideoAdapter.ViewHolder> 
     public void onBindViewHolder(ViewHolder holder, final int position) {
         if (mDatas != null && position < mDatas.size()) {
             ImageLoader.loadImage(mContext, mDatas.get(position).getThumbPath(), holder.thumb);
-            holder.root.setOnClickListener(new View.OnClickListener() {
+            holder.itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
                     if (mOnItemClickListener != null) {

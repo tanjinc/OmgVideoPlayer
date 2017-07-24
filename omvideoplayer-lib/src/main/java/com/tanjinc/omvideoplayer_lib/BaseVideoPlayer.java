@@ -68,6 +68,7 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
 
     private boolean isFull;
     private boolean mScreenOn = true;
+    private boolean mIsControllerShowing = true;
 
     private int mCurrentPosition;
     private int mDuration;
@@ -119,8 +120,12 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
                 case MSG_PROCESS:
                     mCurrentPosition = getCurrentPosition();
                     mDuration = getDuration();
-                    mCurrentPositionTv.setText(Utils.stringForTime(mCurrentPosition));
-                    mDurationTv.setText(Utils.stringForTime(mDuration));
+                    if(mCurrentPositionTv!= null) {
+                        mCurrentPositionTv.setText(Utils.stringForTime(mCurrentPosition));
+                    }
+                    if (mDurationTv != null) {
+                        mDurationTv.setText(Utils.stringForTime(mDuration));
+                    }
                     if (mSeekbar != null) {
                         if (mDuration > 0) {
                             mSeekbar.setProgress(mCurrentPosition * SEEK_MAX / mDuration);
@@ -236,6 +241,7 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
         if (mTextureView == null) {
             initMediaPlayer();
         }
+        mVideoContainer.setOnTouchListener(this);
         MediaPlayerManager.getInstance().setRootView(mVideoContainer);
     }
 
@@ -287,6 +293,9 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
             } else {
                 pause();
             }
+            if (mStartBtn != null) {
+                mStartBtn.setActivated(isPlaying());
+            }
 
         } else if (id == R.id.switch_full_btn) {
             switchToFull();
@@ -333,7 +342,11 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
 
     @Override
     public boolean onTouch(View view, MotionEvent motionEvent) {
-        return super.onTouchEvent(motionEvent);
+        if (mIsControllerShowing) {
+
+        }
+        mIsControllerShowing = !mIsControllerShowing;
+        return true;
     }
 
     public void switchToFull() {
@@ -434,6 +447,7 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
     @Override
     @CallSuper
     public void start() {
+        Log.d(TAG, "video start: ");
         setScreenOn(true);
         mAudioManager.requestAudioFocus(mOnAudioFocusChangeListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT);
         if (mCurrentState != STATE_IDLE) {
@@ -441,11 +455,15 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
             mHandler.post(mProgressRunnable);
             mCurrentState = STATE_PLAYING;
         }
+        if (mStartBtn != null) {
+            mStartBtn.setActivated(true);
+        }
     }
 
     @Override
     @CallSuper
     public void pause() {
+        Log.d(TAG, "video pause: ");
         setScreenOn(false);
         mAudioManager.abandonAudioFocus(mOnAudioFocusChangeListener);
         mHandler.removeCallbacks(mProgressRunnable);
@@ -520,5 +538,15 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
     @Override
     public void onStopTrackingTouch(SeekBar seekBar) {
         start();
+    }
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        return super.dispatchTouchEvent(ev);
+    }
+
+    @Override
+    public boolean onInterceptTouchEvent(MotionEvent ev) {
+        return super.onInterceptTouchEvent(ev);
     }
 }

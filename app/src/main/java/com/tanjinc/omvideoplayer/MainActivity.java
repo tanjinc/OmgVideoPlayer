@@ -1,17 +1,20 @@
 package com.tanjinc.omvideoplayer;
 
+import android.app.ActionBar;
 import android.content.Context;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.Button;
-import android.widget.FrameLayout;
 
+import com.jakewharton.scalpel.ScalpelFrameLayout;
 import com.tanjinc.omvideoplayer_lib.VideoPlayer;
 import com.tanjinc.playermanager.R;
 
@@ -28,6 +31,7 @@ public class MainActivity extends AppCompatActivity {
     private VideoAdapter mVideoAdapter;
     private ArrayList<VideoItem> mVideoItemList;
 
+    ScalpelFrameLayout scalpelView;
 
     private VideoPlayer mVideoPlayer;
 
@@ -60,12 +64,14 @@ public class MainActivity extends AppCompatActivity {
                 mVideoPlayer.setVideoPath(mVideoAdapter.getItem(position).getVideoPath());
                 mVideoPlayer.setTitle(mVideoAdapter.getItem(position).getVideoTitle());
                 mVideoPlayer.start();
+//                scalpelView.setLayerInteractionEnabled(true);
 
             }
         });
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED);
 
+        scalpelView = (ScalpelFrameLayout) findViewById(R.id.scalpel);
     }
 
     private void setData() {
