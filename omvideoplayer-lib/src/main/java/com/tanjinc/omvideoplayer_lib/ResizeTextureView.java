@@ -2,12 +2,14 @@ package com.tanjinc.omvideoplayer_lib;
 
 import android.content.Context;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.TextureView;
 
 /**
  * Created by tanjincheng on 17/6/29.
  */
 public class ResizeTextureView extends TextureView {
+    private static final String TAG = "ResizeTextureView";
 
     private int mVideoWidth;
     private int mVideoHeight;
@@ -25,6 +27,7 @@ public class ResizeTextureView extends TextureView {
     }
 
     public void setVideoSize(int width, int height) {
+        Log.d(TAG, "video setVideoSize() called with: " + "width = [" + width + "], height = [" + height + "]");
             mVideoWidth = width;
             mVideoHeight = height;
             requestLayout();
@@ -34,7 +37,6 @@ public class ResizeTextureView extends TextureView {
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         int width = getDefaultSize(mVideoWidth, widthMeasureSpec);
         int height = getDefaultSize(mVideoHeight, heightMeasureSpec);
-
         if (mVideoHeight > 0 && mVideoWidth > 0) {
             int widthSpecMode = MeasureSpec.getMode(widthMeasureSpec);
             int widthSpecSize = MeasureSpec.getSize(widthMeasureSpec);
@@ -88,6 +90,7 @@ public class ResizeTextureView extends TextureView {
         } else {
 
         }
+        Log.d(TAG, "video onMeasure: w/h=" + width + "/" + height);
         setMeasuredDimension(width, height);
     }
 }

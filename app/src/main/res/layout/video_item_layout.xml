@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
              android:background="#afcc5d5d"
+             android:layout_marginTop="10dp"
              android:layout_width="300dp"
              android:layout_height="250dp">
     <ImageView

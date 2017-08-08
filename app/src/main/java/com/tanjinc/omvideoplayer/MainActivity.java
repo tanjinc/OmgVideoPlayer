@@ -2,6 +2,8 @@ package com.tanjinc.omvideoplayer;
 
 import android.app.ActionBar;
 import android.content.Context;
+import android.os.Handler;
+import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
@@ -16,6 +18,8 @@ import android.widget.Button;
 
 import com.jakewharton.scalpel.ScalpelFrameLayout;
 import com.tanjinc.omvideoplayer_lib.VideoPlayer;
+import com.tanjinc.omvideoplayer_lib.http.HttpGetProxy;
+import com.tanjinc.omvideoplayer_lib.http.Utils;
 import com.tanjinc.playermanager.R;
 
 import java.util.ArrayList;
@@ -34,6 +38,8 @@ public class MainActivity extends AppCompatActivity {
     ScalpelFrameLayout scalpelView;
 
     private VideoPlayer mVideoPlayer;
+    private String mVideoUrl;
+    private HttpGetProxy mHttpGetProxy;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,11 +66,11 @@ public class MainActivity extends AppCompatActivity {
             public void onItemClick(int position) {
                 VideoAdapter.ViewHolder viewHolder = (VideoAdapter.ViewHolder) mRecyclerView.findViewHolderForAdapterPosition(position);
                 Log.d(TAG, "video onItemClick: " + viewHolder.root.getWidth() + " " +viewHolder.root.getHeight());
-                mVideoPlayer.setRootView(viewHolder.root);
-                mVideoPlayer.setVideoPath(mVideoAdapter.getItem(position).getVideoPath());
-                mVideoPlayer.setTitle(mVideoAdapter.getItem(position).getVideoTitle());
-                mVideoPlayer.start();
-//                scalpelView.setLayerInteractionEnabled(true);
+//                mVideoPlayer.setRootView(viewHolder.root);
+//                mVideoPlayer.setVideoPath(mVideoAdapter.getItem(position).getVideoPath());
+//                mVideoPlayer.setTitle(mVideoAdapter.getItem(position).getVideoTitle());
+//                mVideoPlayer.start();
+                playVideo(viewHolder.root, mVideoAdapter.getItem(position).getVideoPath(), position % 2 == 0);
 
             }
         });
@@ -73,6 +79,58 @@ public class MainActivity extends AppCompatActivity {
 
         scalpelView = (ScalpelFrameLayout) findViewById(R.id.scalpel);
     }
+
+    private void playVideo(ViewGroup viewGroup, final String videoUrl, boolean enablePrebuffer) {
+        mVideoPlayer.setRootView(viewGroup);
+        startTimeMills = System.currentTimeMillis();
+        if (enablePrebuffer) {//使用预加载
+            //初始化代理服务器
+
+            if (mHttpGetProxy == null) {
+                mHttpGetProxy = new HttpGetProxy(9110);
+            }
+            mHttpGetProxy.asynStartProxy();
+            new Thread() {
+                @Override
+                public void run() {
+                    String[] urls = mHttpGetProxy.getLocalURL(videoUrl);
+                    String mp4Url = urls[0];
+                    mVideoUrl = urls[1];
+
+                    try {
+                        String preBufferFilePath = mHttpGetProxy.prebuffer(mp4Url,
+                                HttpGetProxy.SIZE);
+
+                        Log.e(TAG, "预加载文件：" + preBufferFilePath);
+                    } catch (Exception ex) {
+                        Log.e(TAG, ex.toString());
+                        Log.e(TAG, Utils.getExceptionMessage(ex));
+                    }
+
+                    delayToStartPlay.sendEmptyMessage(0);
+                }
+            }.start();
+
+
+        }else {//不使用预加载
+            mVideoPlayer.setVideoPath(videoUrl);
+            mVideoPlayer.start();
+        }
+
+    }
+
+    long startTimeMills;
+    private Handler delayToStartPlay = new Handler() {
+        public void handleMessage(Message msg) {
+            startTimeMills=System.currentTimeMillis();
+            mVideoPlayer.setVideoPath(mVideoUrl);
+        }
+    };
+
+    private Handler showController = new Handler() {
+        public void handleMessage(Message msg) {
+        }
+    };
 
     private void setData() {
         mVideoItemList = new ArrayList<>();

@@ -308,7 +308,7 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
     protected void onAttachedToWindow() {
         Log.d(TAG, "video onAttachedToWindow: ");
         super.onAttachedToWindow();
-        MediaPlayerManager.getInstance().setRootView(mVideoPlayerRoot);
+//        MediaPlayerManager.getInstance().setRootView(mVideoPlayerRoot);
     }
 
     @Override
@@ -338,6 +338,10 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
         Log.d(TAG, "video onCompletion: ");
         mCurrentState = STATE_PLAYBACK_COMPLETED;
         setScreenOn(false);
+        mHandler.removeCallbacks(mProgressRunnable);
+        if (mStartBtn != null) {
+            mStartBtn.setActivated(false);
+        }
     }
 
     @Override
@@ -400,6 +404,7 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
 
     public void setVideoPath(String videoPath) {
         initMediaPlayer();
+
         MediaPlayerManager.getInstance().setVideoPath(videoPath);
         showLoading();
     }
@@ -469,6 +474,9 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
         mHandler.removeCallbacks(mProgressRunnable);
         MediaPlayerManager.getInstance().mediaPlayer.pause();
         mCurrentState = STATE_PAUSED;
+        if (mStartBtn != null) {
+            mStartBtn.setActivated(false);
+        }
     }
 
     @Override
@@ -532,12 +540,12 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
 
     @Override
     public void onStartTrackingTouch(SeekBar seekBar) {
-        pause();
+        MediaPlayerManager.getInstance().mediaPlayer.pause();
     }
 
     @Override
     public void onStopTrackingTouch(SeekBar seekBar) {
-        start();
+        MediaPlayerManager.getInstance().mediaPlayer.start();
     }
 
     @Override

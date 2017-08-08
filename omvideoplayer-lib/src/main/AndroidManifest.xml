@@ -7,8 +7,7 @@
 
     <activity android:name="com.tanjinc.omvideoplayer_lib.VideoWindowActivity"
         android:theme="@style/Theme.AppCompat.NoActionBar"
-        android:screenOrientation="sensor"
-        android:configChanges="locale|screenLayout">
+        android:configChanges="orientation|keyboard|keyboardHidden|screenSize">
     </activity>
 
 </manifest>

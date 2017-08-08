@@ -5,7 +5,6 @@ package com.tanjinc.omvideoplayer_lib;
  */
 public class VideoPlayerManager {
     public static BaseVideoPlayer mFirstPlayer;
-    public static BaseVideoPlayer mSecondPlayer;
 
     public static void setFirstPlayer(BaseVideoPlayer player) {
         mFirstPlayer = player;
@@ -17,9 +16,6 @@ public class VideoPlayerManager {
     public static void releaseAll() {
         if (mFirstPlayer != null) {
             mFirstPlayer = null;
-        }
-        if (mSecondPlayer != null) {
-            mSecondPlayer = null;
         }
     }
 }

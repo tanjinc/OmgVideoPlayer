@@ -14,6 +14,7 @@ import android.widget.FrameLayout;
 import android.widget.RelativeLayout;
 
 import java.lang.reflect.Method;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -61,6 +62,7 @@ public class MediaPlayerManager implements TextureView.SurfaceTextureListener, M
         mediaPlayer = new MediaPlayer();
     }
 
+    long startTime = 0;
     private void openVideo() {
         if (mPath == null || mSurfaceTexture == null) {
             Log.d(TAG, "video openVideo not ready");
@@ -73,7 +75,12 @@ public class MediaPlayerManager implements TextureView.SurfaceTextureListener, M
             //通过反射,就不需要传入context
             Class<MediaPlayer> clazz = MediaPlayer.class;
             Method method = clazz.getDeclaredMethod("setDataSource", String.class, Map.class);
-            method.invoke(mediaPlayer, mPath, null);
+            startTime = System.currentTimeMillis();
+            Map<String, String> header = new HashMap<>();
+            String cache_config = String.format("%d %d %d", 0, 1, 5000);
+            header.put("x-cache-config", cache_config);
+            method.invoke(mediaPlayer, mPath, header);
+//            mediaPlayer.setDataSource(mTextureView.getContext(), Uri.parse(mPath), header);
             mediaPlayer.setLooping(false);
             mediaPlayer.setOnPreparedListener(this);
             mediaPlayer.setOnCompletionListener(this);
@@ -150,8 +157,6 @@ public class MediaPlayerManager implements TextureView.SurfaceTextureListener, M
             ((RelativeLayout.LayoutParams)layoutParams).addRule(RelativeLayout.CENTER_IN_PARENT);
         }
         parent.addView(mTextureView, layoutParams);
-        Drawable drawable= parent.getContext().getDrawable(R.drawable.ic_launcher);
-
     }
 
     @Override
@@ -168,6 +173,7 @@ public class MediaPlayerManager implements TextureView.SurfaceTextureListener, M
 
     @Override
     public boolean onInfo(MediaPlayer mediaPlayer, int i, int i1) {
+        Log.d(TAG, "video onInfo: time=" + (System.currentTimeMillis() - startTime));
         if (mOnInfoListener != null) {
             return mOnInfoListener.onInfo(mediaPlayer, i, i1);
         }
