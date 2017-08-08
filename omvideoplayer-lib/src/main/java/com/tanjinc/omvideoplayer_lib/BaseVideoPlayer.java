@@ -20,6 +20,7 @@ import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import com.tanjinc.omvideoplayer_lib.http.HttpGetProxy;
 import com.tanjinc.omvideoplayer_lib.utils.Utils;
 
 
@@ -69,6 +70,9 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
     private boolean isFull;
     private boolean mScreenOn = true;
     private boolean mIsControllerShowing = true;
+
+    private boolean mUsePreBuffer;
+    private HttpGetProxy mHttpGetProxy;
 
     private int mCurrentPosition;
     private int mDuration;
@@ -322,6 +326,7 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
                 hideLoading();
                 break;
             case MediaPlayer.MEDIA_INFO_VIDEO_RENDERING_START:
+                Log.d(TAG, "video onInfo() use time = " + (System.currentTimeMillis() - startTime));
                 hideLoading();
                 onBeginPlay();
                 break;
@@ -402,10 +407,42 @@ public  abstract class BaseVideoPlayer extends FrameLayout implements
         mSaveVideoRoot = null;
     }
 
-    public void setVideoPath(String videoPath) {
-        initMediaPlayer();
+    public void setUsePreBuffer(boolean usePreBuffer) {
+        mUsePreBuffer = usePreBuffer;
+    }
 
-        MediaPlayerManager.getInstance().setVideoPath(videoPath);
+    long startTime;
+    public void setVideoPath(final String videoPath) {
+        initMediaPlayer();
+        startTime = System.currentTimeMillis();
+        if (mUsePreBuffer) {
+            if (mHttpGetProxy == null) {
+                mHttpGetProxy = new HttpGetProxy(9110);
+            }
+            mHttpGetProxy.asynStartProxy();
+
+            new Thread() {
+                @Override
+                public void run() {
+                    String[] urls = mHttpGetProxy.getLocalURL(videoPath);
+                    String mp4Url = urls[0];
+
+                    try {
+                        String preBufferFilePath = mHttpGetProxy.prebuffer(mp4Url,
+                                HttpGetProxy.SIZE);
+
+                        Log.d(TAG, "预加载文件：" + preBufferFilePath);
+                    } catch (Exception ex) {
+                        Log.e(TAG, ex.toString());
+                        Log.e(TAG, com.tanjinc.omvideoplayer_lib.http.Utils.getExceptionMessage(ex));
+                    }
+
+                    MediaPlayerManager.getInstance().setVideoPath(urls[1]);
+                }
+            }.start();
+        } else {
+            MediaPlayerManager.getInstance().setVideoPath(videoPath);
+        }
         showLoading();
     }
 

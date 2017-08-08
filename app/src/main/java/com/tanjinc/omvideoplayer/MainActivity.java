@@ -82,50 +82,11 @@ public class MainActivity extends AppCompatActivity {
 
     private void playVideo(ViewGroup viewGroup, final String videoUrl, boolean enablePrebuffer) {
         mVideoPlayer.setRootView(viewGroup);
-        startTimeMills = System.currentTimeMillis();
-        if (enablePrebuffer) {//使用预加载
-            //初始化代理服务器
-
-            if (mHttpGetProxy == null) {
-                mHttpGetProxy = new HttpGetProxy(9110);
-            }
-            mHttpGetProxy.asynStartProxy();
-            new Thread() {
-                @Override
-                public void run() {
-                    String[] urls = mHttpGetProxy.getLocalURL(videoUrl);
-                    String mp4Url = urls[0];
-                    mVideoUrl = urls[1];
-
-                    try {
-                        String preBufferFilePath = mHttpGetProxy.prebuffer(mp4Url,
-                                HttpGetProxy.SIZE);
-
-                        Log.e(TAG, "预加载文件：" + preBufferFilePath);
-                    } catch (Exception ex) {
-                        Log.e(TAG, ex.toString());
-                        Log.e(TAG, Utils.getExceptionMessage(ex));
-                    }
-
-                    delayToStartPlay.sendEmptyMessage(0);
-                }
-            }.start();
-
-
-        }else {//不使用预加载
-            mVideoPlayer.setVideoPath(videoUrl);
-            mVideoPlayer.start();
-        }
+        mVideoPlayer.setUsePreBuffer(enablePrebuffer);
+        mVideoPlayer.setVideoPath(videoUrl);
+        mVideoPlayer.start();
 
     }
-
-    long startTimeMills;
-    private Handler delayToStartPlay = new Handler() {
-        public void handleMessage(Message msg) {
-            startTimeMills=System.currentTimeMillis();
-            mVideoPlayer.setVideoPath(mVideoUrl);
-        }
-    };
 
     private Handler showController = new Handler() {
         public void handleMessage(Message msg) {
@@ -142,7 +103,7 @@ public class MainActivity extends AppCompatActivity {
 
         VideoItem item2 = new VideoItem();
         item2.setVideoTitle("DNF视频2");
-        item2.setVideoPath("http://video.mp.sj.360.cn/vod_zhushou/vod-shouzhu-bj/064b72f707e4edbecf824d105a8e7b94.mp4");
+        item2.setVideoPath("http://video.mp.sj.360.cn/vod_zhushou/vod-shouzhu-bj/e604948bb5c58e88b95e25fb54846d6e.mp4");
         item2.setThumbPath("http://p4.qhimg.com/t01be414a28e864dc80.jpg");
         mVideoItemList.add(item2);
 

@@ -19,7 +19,7 @@ import java.util.List;
  *
  */
 public class HttpGetProxy{
-	final static public int SIZE =  (int) (5 * 1024);
+	final static public int SIZE =  (int) (1*1024 * 1024);
 	final static public String TAG = "HttpGetProxy";
 	/** 链接带的端口 */
 	private int remotePort=-1;

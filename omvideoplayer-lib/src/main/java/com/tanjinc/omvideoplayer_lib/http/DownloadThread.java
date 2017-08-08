@@ -37,7 +37,7 @@ public class DownloadThread extends Thread {
 	public DownloadThread(String url, String savePath,int targetSize) {
 		mUrl = url;
 		mPath = savePath;
-		mTargetSize=targetSize;
+		mTargetSize = targetSize;
 		mDownloadSize = 0;
 		
 		mStop = false;
@@ -113,7 +113,7 @@ public class DownloadThread extends Thread {
 				return;
 			}
 			while (!mStop //未强制停止
-					&& mDownloadSize<mTargetSize //未下载足够
+					&& mDownloadSize < mTargetSize //未下载足够
 					&& ((len = is.read(bs)) != -1)) {//未全部读取
 				os.write(bs, 0, len);
 				mDownloadSize += len;
@@ -135,8 +135,7 @@ public class DownloadThread extends Thread {
 				} catch (IOException e){}
 			}
 
-			if(mDeleteFile)
-			{
+			if(mDeleteFile) {
 				try {
 					Thread.sleep(50);
 				} catch (InterruptedException e) {}
