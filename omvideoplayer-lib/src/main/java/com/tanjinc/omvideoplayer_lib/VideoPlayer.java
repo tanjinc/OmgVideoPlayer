@@ -40,6 +40,11 @@ public class VideoPlayer extends BaseVideoPlayer implements View.OnTouchListener
     }
 
     @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        return super.onTouchEvent(event);
+    }
+
+    @Override
     public void onBeginPlay() {
         super.onBeginPlay();
     }

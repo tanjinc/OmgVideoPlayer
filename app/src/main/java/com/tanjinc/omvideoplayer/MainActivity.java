@@ -15,8 +15,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 
 import com.jakewharton.scalpel.ScalpelFrameLayout;
+import com.tanjinc.omvideoplayer_lib.BaseVideoPlayer;
 import com.tanjinc.omvideoplayer_lib.VideoPlayer;
 import com.tanjinc.omvideoplayer_lib.http.HttpGetProxy;
 import com.tanjinc.omvideoplayer_lib.http.Utils;
@@ -55,6 +58,15 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+//        RadioGroup mRG = (RadioGroup) findViewById(R.id.radio_group);
+//        int checkedId = mRG.getCheckedRadioButtonId();
+//        if (checkedId == R.id.radioButton2) {
+//            mVideoPlayer.setVideoPlayerType(BaseVideoPlayer.VideoPlayerType.EXO_PLAYER);
+//        } else {
+//            mVideoPlayer.setVideoPlayerType(BaseVideoPlayer.VideoPlayerType.MEDIA_PLAYER);
+//        }
+
+
         mVideoAdapter = new VideoAdapter(getApplicationContext());
         mRecyclerView = (RecyclerView) findViewById(R.id.recycler_view);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
@@ -70,7 +82,7 @@ public class MainActivity extends AppCompatActivity {
 //                mVideoPlayer.setVideoPath(mVideoAdapter.getItem(position).getVideoPath());
 //                mVideoPlayer.setTitle(mVideoAdapter.getItem(position).getVideoTitle());
 //                mVideoPlayer.start();
-                playVideo(viewHolder.root, mVideoAdapter.getItem(position).getVideoPath(), position % 2 == 0);
+                playVideo(viewHolder.root, mVideoAdapter.getItem(position).getVideoPath(), false);
 
             }
         });
