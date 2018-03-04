@@ -19,14 +19,12 @@ import android.widget.RadioButton;
 import android.widget.RadioGroup;
 
 import com.jakewharton.scalpel.ScalpelFrameLayout;
-import com.tanjinc.omvideoplayer_lib.BaseVideoPlayer;
-import com.tanjinc.omvideoplayer_lib.VideoPlayer;
-import com.tanjinc.omvideoplayer_lib.http.HttpGetProxy;
-import com.tanjinc.omvideoplayer_lib.http.Utils;
+import com.tanjinc.omgvideoplayer.http.HttpGetProxy;
 import com.tanjinc.playermanager.R;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
@@ -40,7 +38,7 @@ public class MainActivity extends AppCompatActivity {
 
     ScalpelFrameLayout scalpelView;
 
-    private VideoPlayer mVideoPlayer;
+    private MyVideoPlayer mVideoPlayer;
     private String mVideoUrl;
     private HttpGetProxy mHttpGetProxy;
 
@@ -48,7 +46,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        mVideoPlayer = new VideoPlayer(MainActivity.this);
+        mVideoPlayer = new MyVideoPlayer(MainActivity.this);
         mButton = (Button) findViewById(R.id.switch_btn);
         mButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -57,6 +55,13 @@ public class MainActivity extends AppCompatActivity {
                 mIsFirst = !mIsFirst;
             }
         });
+
+        DaoMaster.DevOpenHelper devOpenHelper = new DaoMaster.DevOpenHelper(getApplication(), "user.db");
+        DaoMaster daoMaster = new DaoMaster(devOpenHelper.getWritableDb());
+        DaoSession daoSession = daoMaster.newSession();
+        UserDao userDao = daoSession.getUserDao();
+
+        userDao.insert(new User(new Random().nextLong(), "tanjinc"));
 
 //        RadioGroup mRG = (RadioGroup) findViewById(R.id.radio_group);
 //        int checkedId = mRG.getCheckedRadioButtonId();
@@ -82,7 +87,7 @@ public class MainActivity extends AppCompatActivity {
 //                mVideoPlayer.setVideoPath(mVideoAdapter.getItem(position).getVideoPath());
 //                mVideoPlayer.setTitle(mVideoAdapter.getItem(position).getVideoTitle());
 //                mVideoPlayer.start();
-                playVideo(viewHolder.root, mVideoAdapter.getItem(position).getVideoPath(), false);
+                playVideo(viewHolder, mVideoAdapter.getItem(position).getVideoPath(), false);
 
             }
         });
@@ -92,8 +97,8 @@ public class MainActivity extends AppCompatActivity {
         scalpelView = (ScalpelFrameLayout) findViewById(R.id.scalpel);
     }
 
-    private void playVideo(ViewGroup viewGroup, final String videoUrl, boolean enablePrebuffer) {
-        mVideoPlayer.setRootView(viewGroup);
+    private void playVideo(VideoAdapter.ViewHolder viewHolder, final String videoUrl, boolean enablePrebuffer) {
+        mVideoPlayer.setRootView(viewHolder.root, viewHolder.thumb, viewHolder.playBtn, null);
         mVideoPlayer.setUsePreBuffer(enablePrebuffer);
         mVideoPlayer.setVideoPath(videoUrl);
         mVideoPlayer.start();

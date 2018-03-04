@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest package="com.tanjinc.omgvideoplayer"
+          xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+    <uses-permission android:name="android.permission.INTERNET"/>
+
+    <activity android:name="com.tanjinc.omgvideoplayer.VideoWindowActivity"
+        android:theme="@style/Theme.AppCompat.NoActionBar"
+        android:configChanges="orientation|keyboard|keyboardHidden|screenSize">
+    </activity>
+
+</manifest>

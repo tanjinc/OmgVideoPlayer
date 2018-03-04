@@ -1,10 +1,13 @@
 package com.tanjinc.omvideoplayer;
 
 import android.content.Context;
+import android.graphics.Outline;
+import android.graphics.Rect;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewOutlineProvider;
 import android.widget.ImageView;
 
 import com.jakewharton.scalpel.ScalpelFrameLayout;
@@ -57,6 +60,7 @@ public class VideoAdapter extends RecyclerView.Adapter<VideoAdapter.ViewHolder> 
                     }
                 }
             });
+            holder.root.setOutlineProvider(new MyViewOutlineProvider(50));
         }
     }
 
@@ -72,11 +76,13 @@ public class VideoAdapter extends RecyclerView.Adapter<VideoAdapter.ViewHolder> 
     static class ViewHolder extends RecyclerView.ViewHolder {
         ImageView thumb;
         ViewGroup root;
+        View playBtn;
 
         public ViewHolder(View view) {
             super(view);
-            root = (ViewGroup) view;
+            root = (ViewGroup) view.findViewById(R.id.video_player_container);
             thumb = (ImageView) view.findViewById(R.id.thumb_img);
+            playBtn = view.findViewById(R.id.play_btn);
         }
         public int getWidth() {
             return root.getMeasuredWidth();
@@ -84,6 +90,25 @@ public class VideoAdapter extends RecyclerView.Adapter<VideoAdapter.ViewHolder> 
 
         public int getHeight() {
             return root.getMeasuredHeight();
+        }
+    }
+
+    public class MyViewOutlineProvider extends ViewOutlineProvider {
+        private float mRadius;
+
+        public MyViewOutlineProvider(float radius) {
+            this.mRadius = radius;
+        }
+
+        @Override
+        public void getOutline(View view, Outline outline) {
+            Rect rect = new Rect();
+            view.getGlobalVisibleRect(rect);
+            int leftMargin = 0;
+            int topMargin = 0;
+            Rect selfRect = new Rect(leftMargin, topMargin,
+                    rect.right - rect.left - leftMargin, rect.bottom - rect.top - topMargin);
+            outline.setRoundRect(selfRect, mRadius);
         }
     }
 }
