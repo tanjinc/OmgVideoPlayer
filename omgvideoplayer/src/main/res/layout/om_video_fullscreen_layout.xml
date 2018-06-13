@@ -1,25 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent">
-
-    <FrameLayout
-        android:id="@+id/video_container"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="#000000">
-        <ImageView
-            android:id="@+id/video_thumb"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"/>
-    </FrameLayout>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+             android:layout_width="match_parent"
+             android:layout_height="match_parent"
+             android:background="#000">
 
     <RelativeLayout
         android:id="@+id/top_layout"
         android:layout_width="match_parent"
         android:layout_height="50dp"
-        android:background="#cccc"
-        android:layout_alignParentTop="true">
+        android:layout_gravity="top">
         <TextView
             android:id="@+id/video_title"
             android:layout_width="wrap_content"
@@ -32,20 +21,19 @@
         android:id="@+id/bottom_layout"
         android:layout_width="match_parent"
         android:layout_height="50dp"
-        android:background="#cccc"
-        android:layout_alignParentBottom="true">
+        android:layout_gravity="bottom">
         <ImageView
             android:id="@+id/start_btn"
             android:layout_width="40dp"
             android:layout_height="40dp"
             android:layout_centerVertical="true"
             android:background="#732"/>
-        <Button
+        <ImageView
             android:id="@+id/switch_full_btn"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_alignParentEnd="true"
-            android:text="switch_full"/>
+            android:src="@drawable/exo_controls_next"/>
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -74,4 +62,4 @@
                 android:text="00:00"/>
         </LinearLayout>
     </RelativeLayout>
-</RelativeLayout>
+</FrameLayout>

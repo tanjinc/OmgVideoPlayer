@@ -28,8 +28,7 @@ public class MediaPlayerManager implements TextureView.SurfaceTextureListener, I
     private SurfaceTexture mSurfaceTexture;
     private ResizeTextureView mTextureView;
     private Uri mUri;
-    private String mPath = "http://video.mp.sj.360.cn/vod_zhushou/vod-shouzhu-bj/e604948bb5c58e88b95e25fb54846d6e.mp4";
-
+    private String mPath;
     public MediaPlayer mMediaPlayer;
     private PlayState mPlayState;
     
@@ -228,11 +227,7 @@ public class MediaPlayerManager implements TextureView.SurfaceTextureListener, I
             Class<MediaPlayer> clazz = MediaPlayer.class;
             Method method = clazz.getDeclaredMethod("setDataSource", String.class, Map.class);
             startTime = System.currentTimeMillis();
-            Map<String, String> header = new HashMap<>();
-            String cache_config = String.format("%d %d %d", 0, 1, 5000);
-            header.put("x-cache-config", cache_config);
-            method.invoke(mMediaPlayer, mPath, header);
-//            mMediaPlayer.setDataSource(mTextureView.getContext(), Uri.parse(mPath), header);
+            mMediaPlayer.setDataSource(mPath);
             mMediaPlayer.setLooping(false);
             mMediaPlayer.setOnPreparedListener(mPreparedListener);
             mMediaPlayer.setOnCompletionListener(mCompletionListener);
@@ -241,11 +236,7 @@ public class MediaPlayerManager implements TextureView.SurfaceTextureListener, I
             mMediaPlayer.setOnErrorListener(mErrorListener);
             mMediaPlayer.setOnInfoListener(mInfoListener);
             mMediaPlayer.setOnVideoSizeChangedListener(mVideoSizeChangedListener);
-
-            MediaPlayer mMediaPlayer = new MediaPlayer();
-            mMediaPlayer.setDataSource(mPath);
             mMediaPlayer.prepareAsync();
-            mMediaPlayer.start();
 
             mMediaPlayer.setSurface(new Surface(mSurfaceTexture));
         } catch (Exception e) {

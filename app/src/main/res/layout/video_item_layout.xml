@@ -1,29 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
              android:background="#afcc5d5d"
-             android:layout_marginTop="10dp"
+             android:layout_gravity="center_horizontal"
              android:layout_width="match_parent"
-             android:layout_height="wrap_content">
+             android:layout_height="200dp">
     <FrameLayout
         android:id="@+id/video_player_container"
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
-        <ImageView
-            android:id="@+id/thumb_img"
-            android:layout_width="match_parent"
-            android:layout_height="250dp"
-            android:layout_gravity="center"
-            />
-        <ImageButton
-            android:id="@+id/play_btn"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:src="@drawable/ic_play"
-            android:background="@null"/>
-        <android.support.v4.widget.ContentLoadingProgressBar
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"/>
     </FrameLayout>
-</RelativeLayout>
+    <ImageView
+        android:id="@+id/thumb_img"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_gravity="center"/>
+    <ImageButton
+        android:id="@+id/play_btn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:src="@drawable/ic_play"
+        android:background="@null"/>
+</FrameLayout>

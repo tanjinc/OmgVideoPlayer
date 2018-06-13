@@ -1,44 +1,44 @@
-package com.tanjinc.omvideoplayer;
+package com.tanjinc.omgvideoplayer;
 
-import android.app.ActionBar;
-import android.content.Context;
-import android.os.Handler;
-import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.Button;
-import android.widget.RadioButton;
-import android.widget.RadioGroup;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
 
-import com.jakewharton.scalpel.ScalpelFrameLayout;
+import com.tanjinc.omgvideoplayer.db.dao.DaoMaster;
+import com.tanjinc.omgvideoplayer.db.dao.DaoSession;
+import com.tanjinc.omgvideoplayer.db.dao.UserDao;
 import com.tanjinc.omgvideoplayer.http.HttpGetProxy;
+import com.tanjinc.omgvideoplayer.utils.ImageUtils;
 import com.tanjinc.playermanager.R;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Random;
 
 public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
 
+    private ViewGroup mTopLayout;
     private Button mButton;
     private boolean mIsFirst = true;
+
+    private FrameLayout mViewRoot;
+    private ImageView mImageView;
+    private ImageView mBtn;
 
     private RecyclerView mRecyclerView;
     private VideoAdapter mVideoAdapter;
     private ArrayList<VideoItem> mVideoItemList;
 
-    ScalpelFrameLayout scalpelView;
-
-    private MyVideoPlayer mVideoPlayer;
+    private BaseVideoPlayer mVideoPlayer;
     private String mVideoUrl;
     private HttpGetProxy mHttpGetProxy;
 
@@ -46,13 +46,17 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        mVideoPlayer = new MyVideoPlayer(MainActivity.this);
+        mVideoPlayer = new SampleVideoPlayer(MainActivity.this);
+        mTopLayout = (ViewGroup) findViewById(R.id.top_layout);
         mButton = (Button) findViewById(R.id.switch_btn);
         mButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 //3. 将原来的textureView添加到新控件
                 mIsFirst = !mIsFirst;
+                if (mVideoPlayer != null) {
+                    mVideoPlayer.startFloat();
+                }
             }
         });
 
@@ -60,16 +64,27 @@ public class MainActivity extends AppCompatActivity {
         DaoMaster daoMaster = new DaoMaster(devOpenHelper.getWritableDb());
         DaoSession daoSession = daoMaster.newSession();
         UserDao userDao = daoSession.getUserDao();
-
         userDao.insert(new User(new Random().nextLong(), "tanjinc"));
 
-//        RadioGroup mRG = (RadioGroup) findViewById(R.id.radio_group);
-//        int checkedId = mRG.getCheckedRadioButtonId();
-//        if (checkedId == R.id.radioButton2) {
-//            mVideoPlayer.setVideoPlayerType(BaseVideoPlayer.VideoPlayerType.EXO_PLAYER);
-//        } else {
-//            mVideoPlayer.setVideoPlayerType(BaseVideoPlayer.VideoPlayerType.MEDIA_PLAYER);
-//        }
+
+
+        mViewRoot = (FrameLayout) findViewById(R.id.video_player_container);
+
+        mImageView = (ImageView) findViewById(R.id.thumb_img);
+        mImageView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mVideoPlayer.setRootView(mViewRoot);
+//                mVideoPlayer.setPreviewImage(mImageView.getDrawable());
+                mVideoPlayer.setVideoUrl("http://video.mp.sj.360.cn/vod_zhushou/vod-shouzhu-bj/e604948bb5c58e88b95e25fb54846d6e.mp4");
+                mVideoPlayer.start();
+
+                mImageView.setVisibility(View.GONE);
+                mBtn.setVisibility(View.GONE);
+            }
+        });
+        mBtn = (ImageView) findViewById(R.id.play_btn);
+        ImageUtils.loadImage("http://p4.qhimg.com/t01be414a28e864dc80.jpg", mImageView);
 
 
         mVideoAdapter = new VideoAdapter(getApplicationContext());
@@ -83,32 +98,29 @@ public class MainActivity extends AppCompatActivity {
             public void onItemClick(int position) {
                 VideoAdapter.ViewHolder viewHolder = (VideoAdapter.ViewHolder) mRecyclerView.findViewHolderForAdapterPosition(position);
                 Log.d(TAG, "video onItemClick: " + viewHolder.root.getWidth() + " " +viewHolder.root.getHeight());
-//                mVideoPlayer.setRootView(viewHolder.root);
-//                mVideoPlayer.setVideoPath(mVideoAdapter.getItem(position).getVideoPath());
-//                mVideoPlayer.setTitle(mVideoAdapter.getItem(position).getVideoTitle());
-//                mVideoPlayer.start();
-                playVideo(viewHolder, mVideoAdapter.getItem(position).getVideoPath(), false);
+                mVideoPlayer.setRootView(viewHolder.root);
+//                mVideoPlayer.setPreviewImage(viewHolder.thumb.getDrawable());
+                mVideoPlayer.setVideoUrl(mVideoAdapter.getItem(position).getVideoPath());
+                mVideoPlayer.setTitle(mVideoAdapter.getItem(position).getVideoTitle());
+                mVideoPlayer.start();
+//                playVideo(viewHolder, mVideoAdapter.getItem(position).getVideoPath(), false);
+                viewHolder.thumb.setVisibility(View.GONE);
+                viewHolder.playBtn.setVisibility(View.GONE);
 
             }
         });
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED);
 
-        scalpelView = (ScalpelFrameLayout) findViewById(R.id.scalpel);
     }
 
     private void playVideo(VideoAdapter.ViewHolder viewHolder, final String videoUrl, boolean enablePrebuffer) {
-        mVideoPlayer.setRootView(viewHolder.root, viewHolder.thumb, viewHolder.playBtn, null);
+        mVideoPlayer.setRootView(viewHolder.root);
         mVideoPlayer.setUsePreBuffer(enablePrebuffer);
-        mVideoPlayer.setVideoPath(videoUrl);
+        mVideoPlayer.setVideoUrl(videoUrl);
         mVideoPlayer.start();
 
     }
-
-    private Handler showController = new Handler() {
-        public void handleMessage(Message msg) {
-        }
-    };
 
     private void setData() {
         mVideoItemList = new ArrayList<>();

@@ -10,16 +10,20 @@ import android.view.View;
  * 基本的播放功能实现在BaseVideoPlayer类中,
  * 此类可以根据业务需求增加不同需求如: 动画, 布局, 用户行为收集等
  */
-public class VideoPlayer extends BaseVideoPlayer implements View.OnTouchListener{
+public class SampleVideoPlayer extends BaseVideoPlayer implements View.OnTouchListener{
     //播放地址
 //    private String mPath = "http://video.mp.sj.360.cn/vod_zhushou/vod-shouzhu-bj/e604948bb5c58e88b95e25fb54846d6e.mp4";
 
 //    private String mThumb = "http://pic28.nipic.com/20130417/3822951_115921742000_2.jpg";
 
-    public VideoPlayer(Context context) {
+    public SampleVideoPlayer(Context context) {
         super(context);
+        setType(VideoPlayerType.EXO_PLAYER);
         setMiniLayoutId(R.layout.om_video_mini_layout);          //设置小窗布局
         setFullLayoutId(R.layout.om_video_fullscreen_layout);   //设置全局布局
+        registerWidget(WidgetType.LOADING, R.layout.om_video_loading_view);
+        registerWidget(WidgetType.VOLUME, R.layout.om_video_volume_progress_layaout);
+        init();
     }
 
 

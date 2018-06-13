@@ -18,6 +18,9 @@ buildscript {
 allprojects {
     repositories {
         jcenter()
+        maven {
+            url "http://repo.baichuan-android.taobao.com/content/groups/BaichuanRepositories/"
+        }
     }
 }
 

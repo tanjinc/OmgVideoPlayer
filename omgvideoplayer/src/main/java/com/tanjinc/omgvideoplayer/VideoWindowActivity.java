@@ -3,6 +3,7 @@ package com.tanjinc.omgvideoplayer;
 import android.content.res.Configuration;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.view.KeyEvent;
 import android.view.ViewGroup;
 
 
@@ -10,6 +11,7 @@ public class VideoWindowActivity extends AppCompatActivity {
 
     private String mAction = "";
     private BaseVideoPlayer mBaseVideoPlayer;
+    private OmgVideoView mOmgVideoView;
     private int mCurrentState;
 
     @Override
@@ -18,8 +20,8 @@ public class VideoWindowActivity extends AppCompatActivity {
         setContentView(R.layout.om_video_window_activity_layout);
 
         mAction = getIntent().getStringExtra("action");
-
-        mBaseVideoPlayer = VideoPlayerManager.getVideoPlayer();
+//        mOmgVideoView = (OmgVideoView) findViewById(R.id.video);
+        mBaseVideoPlayer = BaseVideoPlayer.getStaticPlayer();
         ((ViewGroup)mBaseVideoPlayer.getParent()).removeView(mBaseVideoPlayer);
         mBaseVideoPlayer.setContext(this);
         mBaseVideoPlayer.setRootView((ViewGroup) findViewById(R.id.full_container));
@@ -52,17 +54,24 @@ public class VideoWindowActivity extends AppCompatActivity {
     }
 
     @Override
-    public void onBackPressed() {
-        if (mAction.equals(BaseVideoPlayer.ACTION_SWITCH_TO_FULL)) {
-            mBaseVideoPlayer.exitFull();
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (mBaseVideoPlayer != null) {
+            if (keyCode == KeyEvent.KEYCODE_BACK) {
+                if (mAction.equals(BaseVideoPlayer.ACTION_SWITCH_TO_FULL)) {
+                    mBaseVideoPlayer.exitFull();
+                }
+            } else {
+                return mBaseVideoPlayer.onKeyDown(keyCode, event);
+            }
         }
-        super.onBackPressed();
+        return super.onKeyDown(keyCode, event);
     }
+
 
     @Override
     protected void onDestroy() {
         if (!mAction.equals(BaseVideoPlayer.ACTION_SWITCH_TO_FULL)) {
-            VideoPlayerManager.releaseAll();
+            BaseVideoPlayer.releaseStaticPlayer();
         }
         super.onDestroy();
     }

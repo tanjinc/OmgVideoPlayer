@@ -1,4 +1,4 @@
-package com.tanjinc.omvideoplayer;
+package com.tanjinc.omgvideoplayer;
 
 import org.greenrobot.greendao.annotation.Entity;
 import org.greenrobot.greendao.annotation.Id;

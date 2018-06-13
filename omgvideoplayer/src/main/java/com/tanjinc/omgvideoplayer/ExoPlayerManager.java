@@ -77,6 +77,12 @@ public class ExoPlayerManager implements TextureView.SurfaceTextureListener,
     }
 
     private void openVideo() {
+        if (mPath == null || mTextureView == null) {
+            return;
+        }
+        if (mExoPlayer != null) {
+            mExoPlayer.release();
+        }
         DefaultBandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
         DataSource.Factory dataSourceFactory = new DefaultDataSourceFactory(mContext, mUserAgent);
         ExtractorsFactory extractorsFactory = new DefaultExtractorsFactory();
@@ -112,7 +118,6 @@ public class ExoPlayerManager implements TextureView.SurfaceTextureListener,
     public void setParentView(ViewGroup parent) {
         if (mTextureView != null && mTextureView.getParent() != null) {
             ((ViewGroup) mTextureView.getParent()).removeView(mTextureView);
-
         }
         ViewGroup.LayoutParams layoutParams = null;
         if (parent instanceof FrameLayout) {
@@ -122,7 +127,7 @@ public class ExoPlayerManager implements TextureView.SurfaceTextureListener,
             layoutParams = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
             ((RelativeLayout.LayoutParams)layoutParams).addRule(RelativeLayout.CENTER_IN_PARENT);
         }
-        parent.addView(mTextureView, layoutParams);
+        parent.addView(mTextureView, 0, layoutParams);
     }
 
     @Override
@@ -142,7 +147,6 @@ public class ExoPlayerManager implements TextureView.SurfaceTextureListener,
         Log.d(TAG, "video onSurfaceTextureAvailable: " + surfaceTexture);
         if (mSurfaceTexture == null) {
             mSurfaceTexture = surfaceTexture;
-            mExoPlayer.setVideoTextureView(mTextureView);
             openVideo();
         } else {
             mTextureView.setSurfaceTexture(mSurfaceTexture);
@@ -151,8 +155,11 @@ public class ExoPlayerManager implements TextureView.SurfaceTextureListener,
     }
 
     @Override
-    public void onSurfaceTextureSizeChanged(SurfaceTexture surfaceTexture, int i, int i1) {
-
+    public void onSurfaceTextureSizeChanged(SurfaceTexture surfaceTexture, int width, int height) {
+        Log.d(TAG, "video onSurfaceTextureSizeChanged() called with: " + "surfaceTexture = [" + surfaceTexture + "], width = [" + width + "], height = [" + height + "]");
+        if (mTextureView != null) {
+            mTextureView.setVideoSize(width, height);
+        }
     }
 
     @Override
@@ -257,10 +264,13 @@ public class ExoPlayerManager implements TextureView.SurfaceTextureListener,
                 break;
             case ExoPlayer.STATE_BUFFERING:
                 if (mOnInfoListener != null) {
-                    mOnInfoListener.onInfo(MEDIA_INFO_VIDEO_RENDERING_START,0);
+                    mOnInfoListener.onInfo(MEDIA_INFO_BUFFERING_START,0);
                 }
                 break;
             case ExoPlayer.STATE_ENDED:
+                if (mOnCompletionListener != null) {
+                    mOnCompletionListener.onCompletion();
+                }
                 break;
             case ExoPlayer.STATE_IDLE:
                 break;

@@ -4,10 +4,13 @@
 
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+
 
     <activity android:name="com.tanjinc.omgvideoplayer.VideoWindowActivity"
         android:theme="@style/Theme.AppCompat.NoActionBar"
         android:configChanges="orientation|keyboard|keyboardHidden|screenSize">
     </activity>
-
+    <service android:name="com.tanjinc.omgvideoplayer.FloatWindowService">
+    </service>
 </manifest>

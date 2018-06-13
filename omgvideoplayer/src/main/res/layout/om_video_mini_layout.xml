@@ -1,28 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent">
-
-    <FrameLayout
-        android:id="@+id/video_container"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:background="#000"/>
-
-    <!-- loading view-->
-    <ProgressBar
-        android:id="@+id/video_loading_view"
-        android:layout_width="20dp"
-        android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
-        style="?android:attr/progressBarStyleLarge"/>
-
     <RelativeLayout
         android:id="@+id/top_layout"
         android:layout_width="match_parent"
         android:layout_height="20dp"
         android:background="#4c060505"
-        android:layout_alignParentTop="true">
+        android:layout_gravity="top">
         <TextView
             android:id="@+id/video_title"
             android:layout_width="wrap_content"
@@ -36,7 +21,7 @@
         android:layout_width="match_parent"
         android:layout_height="40dp"
         android:background="#4c060505"
-        android:layout_alignParentBottom="true">
+        android:layout_gravity="bottom">
         <ImageView
             android:id="@+id/start_btn"
             android:layout_width="wrap_content"
@@ -90,4 +75,4 @@
         </LinearLayout>
 
     </RelativeLayout>
-</RelativeLayout>
+</FrameLayout>

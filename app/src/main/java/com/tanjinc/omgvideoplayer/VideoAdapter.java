@@ -1,4 +1,4 @@
-package com.tanjinc.omvideoplayer;
+package com.tanjinc.omgvideoplayer;
 
 import android.content.Context;
 import android.graphics.Outline;
@@ -10,8 +10,7 @@ import android.view.ViewGroup;
 import android.view.ViewOutlineProvider;
 import android.widget.ImageView;
 
-import com.jakewharton.scalpel.ScalpelFrameLayout;
-import com.tanjinc.omvideoplayer.utils.ImageLoader;
+import com.tanjinc.omgvideoplayer.utils.ImageUtils;
 import com.tanjinc.playermanager.R;
 
 import java.util.ArrayList;
@@ -51,7 +50,7 @@ public class VideoAdapter extends RecyclerView.Adapter<VideoAdapter.ViewHolder> 
     @Override
     public void onBindViewHolder(ViewHolder holder, final int position) {
         if (mDatas != null && position < mDatas.size()) {
-            ImageLoader.loadImage(mContext, mDatas.get(position).getThumbPath(), holder.thumb);
+            ImageUtils.loadImage(mDatas.get(position).getThumbPath(), holder.thumb);
             holder.itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
@@ -60,7 +59,7 @@ public class VideoAdapter extends RecyclerView.Adapter<VideoAdapter.ViewHolder> 
                     }
                 }
             });
-            holder.root.setOutlineProvider(new MyViewOutlineProvider(50));
+            //holder.root.setOutlineProvider(new MyViewOutlineProvider(50));
         }
     }
 
