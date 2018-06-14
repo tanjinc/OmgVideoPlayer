@@ -1,8 +1,12 @@
 package com.tanjinc.omgvideoplayer;
 
 import android.app.Service;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Color;
+import android.os.Binder;
 import android.os.Build;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
@@ -12,6 +16,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.widget.FrameLayout;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
@@ -22,10 +27,12 @@ import android.widget.Toast;
 public class FloatWindowService extends Service {
     private static final String TAG = "FloatWindowService";
 
+    public static final String ACTION_EXIT_FLOAT = "exit_float";
+
     private WindowManager mWindowManager;
     private WindowManager.LayoutParams mWindowManagerLp;
-    private RelativeLayout mRootView;
-    private RelativeLayout.LayoutParams mRootLayoutParams;
+    private FrameLayout mRootView;
+    private FrameLayout.LayoutParams mRootLayoutParams;
 
     /**
      * 浮动窗原始位置
@@ -39,47 +46,14 @@ public class FloatWindowService extends Service {
     private float mTouchStartY;
 
     private BaseVideoPlayer mBaseVideoPlayer;
+    private MyBinder binder = new MyBinder();
+
 
     @Override
     public void onCreate() {
         Log.d(TAG, "video onCreate: ");
         super.onCreate();
         mWindowManager = (WindowManager) getApplicationContext().getSystemService(Service.WINDOW_SERVICE);
-    }
-
-    @Override
-    public int onStartCommand(Intent intent, int flags, int startId) {
-        Log.d(TAG, "video onStartCommand: ");
-        mRootView = new RelativeLayout(getApplication());
-        mRootView.setBackgroundColor(intent.getIntExtra("background", Color.BLACK));
-
-        mBaseVideoPlayer = BaseVideoPlayer.getStaticPlayer();
-        ((ViewGroup)mBaseVideoPlayer.getParent()).removeView(mBaseVideoPlayer);
-        mBaseVideoPlayer.setContext(this);
-        mBaseVideoPlayer.setRootView(mRootView);
-        mRootView.setOnTouchListener(mOnTouchListener);
-
-
-        mRootLayoutParams = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
-
-        mWindowManagerLp = new WindowManager.LayoutParams();
-        mWindowManagerLp.width = intent.getIntExtra("width", getResources().getDimensionPixelSize(R.dimen.omg_float_window_width));
-        mWindowManagerLp.height = intent.getIntExtra("height", getResources().getDimensionPixelSize(R.dimen.omg_float_window_height));
-        mWindowManagerLp.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL | WindowManager.LayoutParams
-                .FLAG_NOT_FOCUSABLE;
-        mWindowManagerLp.type = WindowManager.LayoutParams.TYPE_TOAST;
-        if (Build.VERSION.SDK_INT >= 19) {
-            mWindowManagerLp.type = WindowManager.LayoutParams.TYPE_TOAST;
-        } else {
-            mWindowManagerLp.type = WindowManager.LayoutParams.TYPE_SYSTEM_ALERT;
-        }
-        mWindowManagerLp.gravity = Gravity.TOP | Gravity.START;
-        mWindowManagerLp.x = 0;
-        mWindowManagerLp.y = 0;
-        mWindowManagerLp.token = mRootView.getWindowToken();
-        mWindowManager.addView(mRootView, mWindowManagerLp);
-
-        return super.onStartCommand(intent, flags, startId);
     }
 
     private View.OnTouchListener mOnTouchListener = new View.OnTouchListener() {
@@ -135,14 +109,63 @@ public class FloatWindowService extends Service {
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
-        return null;
+        Log.d(TAG, "video onBind: ");
+        mRootView = new FrameLayout(getApplication());
+        mRootView.setBackgroundColor(intent.getIntExtra("background", Color.BLACK));
+
+        mBaseVideoPlayer = BaseVideoPlayer.getStaticPlayer();
+        ((ViewGroup)mBaseVideoPlayer.getParent()).removeView(mBaseVideoPlayer);
+        mBaseVideoPlayer.setContext(this);
+        mBaseVideoPlayer.setRootView(mRootView);
+        mRootView.setOnTouchListener(mOnTouchListener);
+
+        mRootLayoutParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+
+        mWindowManagerLp = new WindowManager.LayoutParams();
+        mWindowManagerLp.width = intent.getIntExtra("width", getResources().getDimensionPixelSize(R.dimen.omg_float_window_width));
+        mWindowManagerLp.height = intent.getIntExtra("height", getResources().getDimensionPixelSize(R.dimen.omg_float_window_height));
+        mWindowManagerLp.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL | WindowManager.LayoutParams
+                .FLAG_NOT_FOCUSABLE;
+        mWindowManagerLp.type = WindowManager.LayoutParams.TYPE_TOAST;
+        if (Build.VERSION.SDK_INT >= 19) {
+            mWindowManagerLp.type = WindowManager.LayoutParams.TYPE_TOAST;
+        } else {
+            mWindowManagerLp.type = WindowManager.LayoutParams.TYPE_SYSTEM_ALERT;
+        }
+        mWindowManagerLp.gravity = Gravity.TOP | Gravity.START;
+        mWindowManagerLp.x = 0;
+        mWindowManagerLp.y = 0;
+        mWindowManagerLp.token = mRootView.getWindowToken();
+        mWindowManager.addView(mRootView, mWindowManagerLp);
+
+        return binder;
+    }
+
+    @Override
+    public boolean onUnbind(Intent intent) {
+        Log.d(TAG, "video onUnbind: ");
+        return super.onUnbind(intent);
     }
 
     @Override
     public void onDestroy() {
+        Log.d(TAG, "video onDestroy: ");
         if (mBaseVideoPlayer != null) {
             mBaseVideoPlayer.onDestroy();
         }
         super.onDestroy();
+    }
+
+
+    public void stop() {
+        Log.d(TAG, "video stop: ");
+        mWindowManager.removeView(mRootView);
+        mBaseVideoPlayer = null;
+        stopSelf();
+    }
+    public class MyBinder extends Binder {
+        public FloatWindowService getService(){
+            return FloatWindowService.this;
+        }
     }
 }

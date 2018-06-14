@@ -1,14 +1,17 @@
 package com.tanjinc.omgvideoplayer;
 
 import android.app.Activity;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ServiceConnection;
 import android.graphics.Color;
 import android.graphics.Outline;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
 import android.os.Handler;
+import android.os.IBinder;
 import android.os.Message;
 import android.support.annotation.CallSuper;
 import android.support.annotation.LayoutRes;
@@ -95,6 +98,7 @@ abstract class BaseVideoPlayer extends FrameLayout implements
     private static int SEEK_MAX = 1000;
 
 
+    private boolean isFloat;
     private boolean isFull;
     private boolean mScreenOn = true;
     private boolean mIsControllerShowing = true;
@@ -291,6 +295,7 @@ abstract class BaseVideoPlayer extends FrameLayout implements
     }
 
     public BaseVideoPlayer setFull(boolean isFull) {
+
         this.isFull = isFull;
         return this;
     }
@@ -525,14 +530,47 @@ abstract class BaseVideoPlayer extends FrameLayout implements
         releaseStaticPlayer();
     }
 
+    private FloatWindowService mFloatService;
+    private ServiceConnection mServiceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            FloatWindowService.MyBinder binder =  (FloatWindowService.MyBinder)service;
+            mFloatService = binder.getService();
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            mFloatService = null;
+        }
+    };
     public void startFloat() {
         setStaticPlayer(this);
+        mSaveVideoRoot = mVideoPlayerRoot;
+
         Intent intent = new Intent(mContext, FloatWindowService.class);
-        mContext.startService(intent);
+        mContext.bindService(intent, mServiceConnection, Context.BIND_AUTO_CREATE);
+        isFloat = true;
+    }
+
+    public void exitFloat() {
+        mSaveContext.unbindService(mServiceConnection);
+        mContext = mSaveContext;
+        mSaveContext = null;
+        setRootView(mSaveVideoRoot);
+        setContentView(R.layout.om_video_mini_layout);
+        releaseStaticPlayer();
+        if (mFloatService != null) {
+            mFloatService.stop();
+        }
+        isFloat = false;
     }
 
     public boolean isFull() {
         return isFull;
+    }
+
+    public boolean isFloat() {
+        return isFloat;
     }
 
     public void onPause() {

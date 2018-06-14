@@ -54,8 +54,12 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
                 //3. 将原来的textureView添加到新控件
                 mIsFirst = !mIsFirst;
-                if (mVideoPlayer != null) {
-                    mVideoPlayer.startFloat();
+                if (mVideoPlayer != null ) {
+                    if (mVideoPlayer.isFloat()) {
+                        mVideoPlayer.exitFloat();
+                    } else {
+                        mVideoPlayer.startFloat();
+                    }
                 }
             }
         });
