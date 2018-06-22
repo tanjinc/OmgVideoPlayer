@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/PlayerManager.iml" filepath="$PROJECT_DIR$/PlayerManager.iml" />
+      <module fileurl="file://$PROJECT_DIR$/OmgVideoPlayer.iml" filepath="$PROJECT_DIR$/OmgVideoPlayer.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
       <module fileurl="file://$PROJECT_DIR$/omgvideoplayer/omgvideoplayer.iml" filepath="$PROJECT_DIR$/omgvideoplayer/omgvideoplayer.iml" />
     </modules>

@@ -1,5 +1,8 @@
 package com.tanjinc.omgvideoplayer;
 
+import android.animation.Animator;
+import android.animation.AnimatorInflater;
+import android.animation.ValueAnimator;
 import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -16,6 +19,8 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.FrameLayout;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
@@ -34,20 +39,17 @@ public class FloatWindowService extends Service {
     private FrameLayout mRootView;
     private FrameLayout.LayoutParams mRootLayoutParams;
 
-    /**
-     * 浮动窗原始位置
-     */
-    private float startPositionX = 0;
-    private float startPositionY = 0;
 
-    private float lastX;
-    private float lastY;
-    private float mTouchStartX;
-    private float mTouchStartY;
+    private int targetX, targetY, rawX, rawY;
 
     private BaseVideoPlayer mBaseVideoPlayer;
     private MyBinder binder = new MyBinder();
 
+    public boolean hasAnima = true;
+    public int mAniationDuration = 500;
+
+    private int mWindowHeight;
+    private int mWindowWidth;
 
     @Override
     public void onCreate() {
@@ -55,56 +57,6 @@ public class FloatWindowService extends Service {
         super.onCreate();
         mWindowManager = (WindowManager) getApplicationContext().getSystemService(Service.WINDOW_SERVICE);
     }
-
-    private View.OnTouchListener mOnTouchListener = new View.OnTouchListener() {
-        @Override
-        public boolean onTouch(View view, MotionEvent event) {
-            lastX = event.getRawX();
-            lastY = event.getRawY();
-            switch (event.getActionMasked()) {
-                case MotionEvent.ACTION_DOWN:
-                    mTouchStartX = event.getX();
-                    mTouchStartY = event.getY();
-                    //记录悬浮窗原始位置
-                    startPositionX = mWindowManagerLp.x;
-                    startPositionY = mWindowManagerLp.y;
-                    Log.d(TAG, "onTouch  down  : m  " + mTouchStartX + "   " + mTouchStartY);
-                    Log.d(TAG, "onTouch  down  : last  " + lastX + "   " + lastY);
-                    Log.d(TAG, "onTouch  down  : start  " + startPositionX + "   " + startPositionY);
-                    Log.d(TAG, "onTouch  down  : Params  " + mWindowManagerLp.x + "  " + mWindowManagerLp
-                            .y);
-                    break;
-                case MotionEvent.ACTION_MOVE:
-                    //计算新的位置
-                    mWindowManagerLp.x = (int) (lastX - mTouchStartX);
-                    mWindowManagerLp.y = (int) (lastY - mTouchStartY);
-
-                    //如果原始位置在中间，所以需要减去屏幕宽高的一半
-//                      mWindowManagerLp.x = (int) (lastX - mTouchStartX - contentWidth / 2);
-//                      mWindowManagerLp.y = (int) (lastY - mTouchStartY - contentHeight / 2);
-
-                    Log.d(TAG, "onTouch  move  : m  " + mTouchStartX + "   " + mTouchStartY);
-                    Log.d(TAG, "onTouch  move  : last  " + lastX + "   " + lastY);
-                    Log.d(TAG, "onTouch  move  : start  " + startPositionX + "   " + startPositionY);
-                    Log.d(TAG, "onTouch  move  : Params  " + mWindowManagerLp.x + "  " + mWindowManagerLp
-                            .y);
-//
-                    mWindowManager.updateViewLayout(mRootView, mWindowManagerLp);
-                    break;
-                case MotionEvent.ACTION_UP:
-                    Log.d(TAG, "onTouch  up  : m  " + mTouchStartX + "   " + mTouchStartY);
-                    Log.d(TAG, "onTouch  up  : last  " + lastX + "   " + lastY);
-                    Log.d(TAG, "onTouch  up  : start  " + startPositionX + "   " + startPositionY);
-                    Log.d(TAG, "onTouch  up  : Params  " + mWindowManagerLp.x + "  " + mWindowManagerLp.y);
-                    if (Math.abs(mWindowManagerLp.x - startPositionX) < 20 && Math.abs(mWindowManagerLp.y
-                            - startPositionY) < 20) {
-                        Toast.makeText(getApplication(), "click", Toast.LENGTH_LONG);
-                    }
-                    break;
-            }
-            return false;
-        }
-    };
 
     @Nullable
     @Override
@@ -114,16 +66,20 @@ public class FloatWindowService extends Service {
         mRootView.setBackgroundColor(intent.getIntExtra("background", Color.BLACK));
 
         mBaseVideoPlayer = BaseVideoPlayer.getStaticPlayer();
+
+        int[] preLocation = new int[2];
+        mBaseVideoPlayer.getLocationInWindow(preLocation);
+        mWindowWidth = mBaseVideoPlayer.getMeasuredWidth();
+        mWindowHeight = mBaseVideoPlayer.getMeasuredHeight();
+
         ((ViewGroup)mBaseVideoPlayer.getParent()).removeView(mBaseVideoPlayer);
         mBaseVideoPlayer.setContext(this);
         mBaseVideoPlayer.setRootView(mRootView);
-        mRootView.setOnTouchListener(mOnTouchListener);
+        mBaseVideoPlayer.setContentView(intent.getIntExtra("float_layout_id", 0));
+        mRootView.setOnTouchListener(new FloatTouchListener());
 
         mRootLayoutParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
-
         mWindowManagerLp = new WindowManager.LayoutParams();
-        mWindowManagerLp.width = intent.getIntExtra("width", getResources().getDimensionPixelSize(R.dimen.omg_float_window_width));
-        mWindowManagerLp.height = intent.getIntExtra("height", getResources().getDimensionPixelSize(R.dimen.omg_float_window_height));
         mWindowManagerLp.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL | WindowManager.LayoutParams
                 .FLAG_NOT_FOCUSABLE;
         mWindowManagerLp.type = WindowManager.LayoutParams.TYPE_TOAST;
@@ -133,10 +89,38 @@ public class FloatWindowService extends Service {
             mWindowManagerLp.type = WindowManager.LayoutParams.TYPE_SYSTEM_ALERT;
         }
         mWindowManagerLp.gravity = Gravity.TOP | Gravity.START;
-        mWindowManagerLp.x = 0;
-        mWindowManagerLp.y = 0;
         mWindowManagerLp.token = mRootView.getWindowToken();
-        mWindowManager.addView(mRootView, mWindowManagerLp);
+
+        mWindowManagerLp.width = intent.getIntExtra("width", mWindowWidth);
+        mWindowManagerLp.height = intent.getIntExtra("height", mWindowHeight);
+
+
+
+        if (hasAnima) {
+            mWindowManager.addView(mRootView, mWindowManagerLp);
+            targetX = intent.getIntExtra("x", 0);
+            targetY = intent.getIntExtra("y", 0);
+            rawX = preLocation[0];
+            rawY = preLocation[1];
+            ValueAnimator valueAnimator = ValueAnimator.ofInt(rawY);
+            valueAnimator.setIntValues(rawY, targetY);
+            valueAnimator.setDuration(mAniationDuration);
+            valueAnimator.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                @Override
+                public void onAnimationUpdate(ValueAnimator animation) {
+                    int updateValue = (int) animation.getAnimatedValue();
+                    mWindowManagerLp.y = updateValue;
+                    mWindowManagerLp.x = updateValue * rawX  / (rawY - targetY);
+                    Log.d(TAG, "video onAnimationUpdate: ｙ＝" + updateValue + " x =" + mWindowManagerLp.x);
+                    mWindowManager.updateViewLayout(mRootView, mWindowManagerLp);
+                }
+            });
+            valueAnimator.start();
+        } else {
+            mWindowManagerLp.x = intent.getIntExtra("x", 0);
+            mWindowManagerLp.y = intent.getIntExtra("y", 0);
+            mWindowManager.addView(mRootView, mWindowManagerLp);
+        }
 
         return binder;
     }
@@ -166,6 +150,37 @@ public class FloatWindowService extends Service {
     public class MyBinder extends Binder {
         public FloatWindowService getService(){
             return FloatWindowService.this;
+        }
+    }
+
+    private class FloatTouchListener implements View.OnTouchListener {
+        private int x;
+        private int y;
+
+        @Override
+        public boolean onTouch(View view, MotionEvent event) {
+            switch (event.getAction()) {
+                case MotionEvent.ACTION_DOWN:
+                    x = (int) event.getRawX();
+                    y = (int) event.getRawY();
+                    break;
+                case MotionEvent.ACTION_MOVE:
+                    int nowX = (int) event.getRawX();
+                    int nowY = (int) event.getRawY();
+                    int movedX = nowX - x;
+                    int movedY = nowY - y;
+                    x = nowX;
+                    y = nowY;
+                    mWindowManagerLp.x = mWindowManagerLp.x + movedX;
+                    mWindowManagerLp.y = mWindowManagerLp.y + movedY;
+
+                    // 更新悬浮窗控件布局
+                    mWindowManager.updateViewLayout(view, mWindowManagerLp);
+                    break;
+                default:
+                    break;
+            }
+            return false;
         }
     }
 }

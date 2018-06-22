@@ -1,19 +1,28 @@
 package com.tanjinc.omgvideoplayer;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.graphics.Color;
 import android.graphics.Outline;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
+import android.net.ConnectivityManager;
+import android.net.ConnectivityManager.OnNetworkActiveListener;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
+import android.provider.Settings;
 import android.support.annotation.CallSuper;
+import android.support.annotation.IdRes;
 import android.support.annotation.LayoutRes;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -30,19 +39,23 @@ import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import com.tanjinc.omgvideoplayer.annotation.GetViewTo;
 import com.tanjinc.omgvideoplayer.http.HttpGetProxy;
 import com.tanjinc.omgvideoplayer.utils.Utils;
 import com.tanjinc.omgvideoplayer.widget.BaseWidget;
 import com.tanjinc.omgvideoplayer.widget.OmLoadWidget;
+import com.tanjinc.omgvideoplayer.widget.OmNetworkWarnWidget;
 import com.tanjinc.omgvideoplayer.widget.OmVolumeWidget;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 
 /**
  * Created by tanjincheng on 17/7/1.
  */
-abstract class BaseVideoPlayer extends FrameLayout implements
+public abstract class BaseVideoPlayer extends FrameLayout implements
         View.OnClickListener,
         View.OnTouchListener,
         SeekBar.OnSeekBarChangeListener,
@@ -50,7 +63,8 @@ abstract class BaseVideoPlayer extends FrameLayout implements
         IMediaPlayerControl.OnCompletionListener,
         IMediaPlayerControl.OnErrorListener,
         IMediaPlayerControl.OnInfoListener,
-        IMediaPlayerControl.OnPreparedListener, IMediaPlayerControl.MediaPlayerControl{
+        IMediaPlayerControl.OnPreparedListener,
+        IMediaPlayerControl.MediaPlayerControl{
 
     private static final String TAG = "BaseVideoPlayer";
     private static final int MSG_PROCESS = 100;
@@ -68,11 +82,12 @@ abstract class BaseVideoPlayer extends FrameLayout implements
 
     private @LayoutRes int mMiniLayoutId = -1;
     private @LayoutRes int mFullLayoutId = -1;
+    private @LayoutRes int mFloatLayoutId = -1;
 
-    private View mPreLoadingView;
 
     private OmVolumeWidget mVolumeWidget;
     private OmLoadWidget mLoadWidget;
+    private OmNetworkWarnWidget mNetworkWarnWidget;
 
 
     public enum VideoPlayerType {
@@ -84,11 +99,14 @@ abstract class BaseVideoPlayer extends FrameLayout implements
     //ui
     protected View mStartBtn;
     protected View mSwitchBtn;
+    protected View mCloseBtn;
     protected TextView mTitleTv;
     protected TextView mCurrentPositionTv;
     protected TextView mDurationTv;
     protected SeekBar mSeekbar;
     protected FrameLayout mVideoContainer;
+
+    protected View mTopLayout, mBottomLayout, mLeftLayout, mRightLayout;
 
     private ImageView mPreviewImage;
 
@@ -102,6 +120,7 @@ abstract class BaseVideoPlayer extends FrameLayout implements
     private boolean isFull;
     private boolean mScreenOn = true;
     private boolean mIsControllerShowing = true;
+    private boolean mHaveRegisted;
 
     private boolean mUsePreBuffer;
     private HttpGetProxy mHttpGetProxy;
@@ -137,7 +156,7 @@ abstract class BaseVideoPlayer extends FrameLayout implements
 
     public BaseVideoPlayer(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        setContext(context);
+        mContext = context;
         mTextureView = new ResizeTextureView(context.getApplicationContext());
         setRootView(mVideoPlayerRoot);
     }
@@ -167,7 +186,22 @@ abstract class BaseVideoPlayer extends FrameLayout implements
         isFull = false;
     }
 
+    private void initVolume() {
+        try {
+            mAudioManager = (AudioManager) getContext().getSystemService(Context.AUDIO_SERVICE);
 
+            if (mAudioManager != null) {
+//                mMaxVolume = mAudioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
+//                mCurrentVolume = mAudioManag`er.getStreamVolume(AudioManager.STREAM_MUSIC);
+//                mVolumeStep = (mMaxVolume / 15) != 0 ? (mMaxVolume / 15) : 1;
+//                mVolumeProgress = mCurrentVolume * SEEK_MAX / mMaxVolume;
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "void initVolume: ", e);
+        }
+    }
+
+    @SuppressLint("HandlerLeak")
     private Handler mHandler = new Handler() {
         @Override
         public void handleMessage(Message msg) {
@@ -211,6 +245,23 @@ abstract class BaseVideoPlayer extends FrameLayout implements
         @Override
         public void run() {
             mHandler.sendEmptyMessage(MSG_PROCESS);
+        }
+    };
+
+    private BroadcastReceiver mNetworkReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String action = intent.getAction();
+            if (action.equals(ConnectivityManager.CONNECTIVITY_ACTION)) {
+                boolean isNetwork = Utils.isNetworkConnected(getContext());
+                boolean isMobileNetWork = Utils.isMobileNet(getContext());
+                int netWorkType = Utils.getNetWorkType(getContext());
+                Log.d(TAG, "video onReceive: isNetwork=" + isNetwork + " isMobileNetWork=" + isMobileNetWork);
+                if (isMobileNetWork && mNetworkWarnWidget != null) {
+                    onPause();
+                    mNetworkWarnWidget.show();
+                }
+            }
         }
     };
 
@@ -268,6 +319,11 @@ abstract class BaseVideoPlayer extends FrameLayout implements
         return this;
     }
 
+    public BaseVideoPlayer setFloatLayoutId(@LayoutRes int id) {
+        mFloatLayoutId = id;
+        return this;
+    }
+
 
     public enum WidgetType {
         LOADING,
@@ -282,14 +338,16 @@ abstract class BaseVideoPlayer extends FrameLayout implements
             case ERROR:
                 break;
             case VOLUME:
-                mVolumeWidget = new OmVolumeWidget(mContext, layoutId);
+                mVolumeWidget = new OmVolumeWidget(layoutId);
                 mWidgetArrayList.add(mVolumeWidget);
                 break;
             case LOADING:
-                mLoadWidget = new OmLoadWidget(mContext, layoutId);
+                mLoadWidget = new OmLoadWidget(layoutId);
                 mWidgetArrayList.add(mLoadWidget);
                 break;
             case NETWORK:
+                mNetworkWarnWidget = new OmNetworkWarnWidget(this, layoutId);
+                mWidgetArrayList.add(mNetworkWarnWidget);
                 break;
         }
     }
@@ -301,6 +359,9 @@ abstract class BaseVideoPlayer extends FrameLayout implements
     }
 
     public void setContext(Context context) {
+        if (mHaveRegisted && mSaveContext != null) {
+            mSaveContext.unregisterReceiver(mNetworkReceiver);
+        }
         mSaveContext = mContext;
         mContext = context;
     }
@@ -345,6 +406,15 @@ abstract class BaseVideoPlayer extends FrameLayout implements
             mSeekbar.setOnSeekBarChangeListener(this);
         }
 
+        mCloseBtn = findViewById(R.id.video_close_btn);
+        if (mCloseBtn != null) {
+            mCloseBtn.setOnClickListener(this);
+        }
+
+       // mTopLayout = findViewById(R.id.top_layout);
+        //mBottomLayout = findViewById(R.id.bottom_layout);
+//        mLeftLayout = findViewById(R.id.left_layout);
+//        mRightLayout = findViewById(R.id.right_layout);
 
         if (mVolumeWidget != null) {
             for (BaseWidget widget : mWidgetArrayList) {
@@ -354,6 +424,9 @@ abstract class BaseVideoPlayer extends FrameLayout implements
 
         mVideoContainer.setOnTouchListener(this);
         mMediaPlayerManager.setParentView(mVideoContainer);
+
+        mContext.registerReceiver(mNetworkReceiver, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
+        mHaveRegisted = true;
     }
 
     public void setScreenOnWhilePlaying(boolean screenOn) {
@@ -362,13 +435,13 @@ abstract class BaseVideoPlayer extends FrameLayout implements
 
     public void showLoading() {
         if (mLoadWidget != null) {
-            mLoadWidget.setVisibility(VISIBLE);
+            mLoadWidget.show();
         }
     }
 
     public void hideLoading() {
         if (mLoadWidget != null) {
-            mLoadWidget.setVisibility(GONE);
+            mLoadWidget.hide();
         }
     }
 
@@ -411,7 +484,8 @@ abstract class BaseVideoPlayer extends FrameLayout implements
         } else if (id == R.id.switch_full_btn) {
             switchToFull();
 
-        } else {
+        } else if (id == R.id.video_close_btn){
+            onDestroy();
         }
     }
 
@@ -469,6 +543,28 @@ abstract class BaseVideoPlayer extends FrameLayout implements
         return false;
     }
 
+    public void showController() {
+        if (mTopLayout != null) {
+            mTopLayout.setVisibility(VISIBLE);
+        }
+        if (mBottomLayout != null) {
+            mBottomLayout.setVisibility(VISIBLE);
+        }
+
+        mIsControllerShowing = true;
+    }
+
+    public void hideController() {
+        if (mTopLayout != null) {
+            mTopLayout.setVisibility(GONE);
+        }
+        if (mBottomLayout != null) {
+            mBottomLayout.setVisibility(GONE);
+        }
+        mIsControllerShowing = false;
+
+    }
+
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         switch (keyCode) {
@@ -492,20 +588,14 @@ abstract class BaseVideoPlayer extends FrameLayout implements
 
     public void switchToFull() {
         isFull = true;
-        boolean new_activity = true;
         mSaveVideoRoot = mVideoPlayerRoot;
-        if (!new_activity) {
-            setRootView(((ViewGroup) Utils.scanForActivity(mContext).getWindow().getDecorView()));
-            setContentView(mFullLayoutId);
-        } else {
-            setStaticPlayer(this);
-            Intent intent = new Intent(mContext.getApplicationContext(), VideoWindowActivity.class);
-            intent.putExtra("action", ACTION_SWITCH_TO_FULL);
-            intent.putExtra("full_layout_id", mFullLayoutId);
-            intent.putExtra("current_state", mCurrentState);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            mContext.startActivity(intent);
-        }
+        setStaticPlayer(this);
+        Intent intent = new Intent(mContext.getApplicationContext(), VideoWindowActivity.class);
+        intent.putExtra("action", ACTION_SWITCH_TO_FULL);
+        intent.putExtra("full_layout_id", mFullLayoutId);
+        intent.putExtra("current_state", mCurrentState);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        mContext.startActivity(intent);
     }
 
     public static void setStaticPlayer(BaseVideoPlayer player) {
@@ -543,11 +633,27 @@ abstract class BaseVideoPlayer extends FrameLayout implements
             mFloatService = null;
         }
     };
-    public void startFloat() {
+    public void startFloat(int x, int y) {
+        Activity activity = Utils.scanForActivity(mContext);
+        if (activity == null) {
+            return;
+        }
+
         setStaticPlayer(this);
         mSaveVideoRoot = mVideoPlayerRoot;
+        int[] location = new int[2];
+        getLocationOnScreen(location);
 
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+//            if (!Settings.canDrawOverlays(mContext)) {
+//                activity.startActivityForResult(
+//                        new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + activity.getPackageName())), 0);
+//            }
+//        }
         Intent intent = new Intent(mContext, FloatWindowService.class);
+        intent.putExtra("float_layout_id", mFloatLayoutId);
+        intent.putExtra("x", x);
+        intent.putExtra("y", y);
         mContext.bindService(intent, mServiceConnection, Context.BIND_AUTO_CREATE);
         isFloat = true;
     }
@@ -557,7 +663,7 @@ abstract class BaseVideoPlayer extends FrameLayout implements
         mContext = mSaveContext;
         mSaveContext = null;
         setRootView(mSaveVideoRoot);
-        setContentView(R.layout.om_video_mini_layout);
+        setContentView(mMiniLayoutId);
         releaseStaticPlayer();
         if (mFloatService != null) {
             mFloatService.stop();
@@ -592,6 +698,17 @@ abstract class BaseVideoPlayer extends FrameLayout implements
     public void onDestroy() {
         mHandler.removeMessages(MSG_PROCESS);
         mHandler.removeCallbacks(mProgressRunnable);
+        if (isFloat && mFloatService != null) {
+            mFloatService.stop();
+        }
+        if (mHaveRegisted && mContext != null) {
+            mContext.unregisterReceiver(mNetworkReceiver);
+        }
+        if (mWidgetArrayList != null) {
+            for (BaseWidget widget : mWidgetArrayList) {
+                widget.release();
+            }
+        }
         mMediaPlayerManager.release();
         releaseStaticPlayer();
         setScreenOn(false);

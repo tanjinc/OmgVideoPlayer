@@ -19,26 +19,24 @@ public class OmVolumeWidget extends BaseWidget{
 
     private int mCurrentVolume = 0;
 
-    public OmVolumeWidget(@NonNull Context context, @LayoutRes int layoutId) {
-        super(context, layoutId);
+    public OmVolumeWidget(@LayoutRes int layoutId) {
+        super(layoutId);
 
-        mVolumeImage = (ImageView) findViewById(R.id.video_volume_img);
-        mVolumeProgress = (TextView) findViewById(R.id.video_volume_progress);
-        hide();
     }
 
     @Override
     public void attachTo(ViewGroup parent) {
-        if (parent != null) {
-            LayoutParams layoutParams = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
-            layoutParams.gravity = Gravity.CENTER;
-            parent.addView(this,layoutParams);
-        }
+        super.attachTo(parent);
+        mVolumeImage = (ImageView) findViewById(R.id.video_volume_img);
+        mVolumeProgress = (TextView) findViewById(R.id.video_volume_progress);
+        hide();
+
     }
 
     public void setProgress(int progress) {
         mCurrentVolume = progress;
         mVolumeProgress.setText(mCurrentVolume+"%");
+        show();
     }
 
     public int getVolume() {

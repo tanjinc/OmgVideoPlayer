@@ -5,6 +5,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.KeyEvent;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 
 
 public class VideoWindowActivity extends AppCompatActivity {
@@ -18,6 +19,7 @@ public class VideoWindowActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.om_video_window_activity_layout);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
         mAction = getIntent().getStringExtra("action");
 //        mOmgVideoView = (OmgVideoView) findViewById(R.id.video);

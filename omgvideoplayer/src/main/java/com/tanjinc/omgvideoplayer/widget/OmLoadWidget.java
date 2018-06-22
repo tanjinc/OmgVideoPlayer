@@ -15,18 +15,8 @@ public class OmLoadWidget extends BaseWidget {
 
     private TextView mLoadingPercentTv;
 
-    public OmLoadWidget(@NonNull Context context, int id) {
-        super(context, id);
-        mLoadingPercentTv = (TextView) findViewById(R.id.video_loading_percent);
-    }
-
-    @Override
-    public void attachTo(ViewGroup parent) {
-        if (parent != null) {
-            LayoutParams layoutParams = new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);
-            layoutParams.gravity = Gravity.CENTER;
-            parent.addView(this, layoutParams);
-        }
+    public OmLoadWidget(int id) {
+        super(id);
     }
 
     public void setPercent(int percent) {

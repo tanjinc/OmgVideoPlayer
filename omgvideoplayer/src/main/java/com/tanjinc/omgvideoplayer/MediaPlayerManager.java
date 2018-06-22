@@ -290,7 +290,7 @@ public class MediaPlayerManager implements TextureView.SurfaceTextureListener, I
             layoutParams = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
             ((RelativeLayout.LayoutParams)layoutParams).addRule(RelativeLayout.CENTER_IN_PARENT);
         }
-        parent.addView(mTextureView, layoutParams);
+        parent.addView(mTextureView, 0, layoutParams);
     }
 
     @Override
