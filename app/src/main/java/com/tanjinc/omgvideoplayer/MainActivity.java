@@ -34,6 +34,7 @@ public class MainActivity extends AppCompatActivity {
     private FrameLayout mViewRoot;
     private ImageView mImageView;
     private ImageView mBtn;
+    private ImageView mScreenShortView;
 
     private RecyclerView mRecyclerView;
     private VideoAdapter mVideoAdapter;
@@ -49,6 +50,8 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         mVideoPlayer = new SampleVideoPlayer(MainActivity.this);
         mTopLayout = (ViewGroup) findViewById(R.id.top_layout);
+
+        mScreenShortView = (ImageView) findViewById(R.id.screenshort_img);
         mButton = (Button) findViewById(R.id.switch_btn);
         mButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -61,15 +64,12 @@ public class MainActivity extends AppCompatActivity {
                     } else {
                         mVideoPlayer.startFloat(800, 200);
                     }
+
+                    mScreenShortView.setImageBitmap(mVideoPlayer.getScreenShort());
                 }
             }
         });
 
-        DaoMaster.DevOpenHelper devOpenHelper = new DaoMaster.DevOpenHelper(getApplication(), "user.db");
-        DaoMaster daoMaster = new DaoMaster(devOpenHelper.getWritableDb());
-        DaoSession daoSession = daoMaster.newSession();
-        UserDao userDao = daoSession.getUserDao();
-        userDao.insert(new User(new Random().nextLong(), "tanjinc"));
 
 
 
@@ -80,7 +80,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 mVideoPlayer.setRootView(mViewRoot);
-//                mVideoPlayer.setPreviewImage(mImageView.getDrawable());
+                mVideoPlayer.setPreviewImage(mImageView.getDrawable());
                 mVideoPlayer.setVideoUrl("http://video.mp.sj.360.cn/vod_zhushou/vod-shouzhu-bj/e604948bb5c58e88b95e25fb54846d6e.mp4");
                 mVideoPlayer.start();
 
@@ -116,6 +116,13 @@ public class MainActivity extends AppCompatActivity {
         });
 
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED);
+
+
+        DaoMaster.DevOpenHelper devOpenHelper = new DaoMaster.DevOpenHelper(getApplication(), "user.db");
+        DaoMaster daoMaster = new DaoMaster(devOpenHelper.getWritableDb());
+        DaoSession daoSession = daoMaster.newSession();
+        UserDao userDao = daoSession.getUserDao();
+        userDao.insert(new User(new Random().nextLong(), "tanjinc"));
 
     }
 

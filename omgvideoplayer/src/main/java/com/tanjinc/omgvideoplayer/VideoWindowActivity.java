@@ -12,7 +12,6 @@ public class VideoWindowActivity extends AppCompatActivity {
 
     private String mAction = "";
     private BaseVideoPlayer mBaseVideoPlayer;
-    private OmgVideoView mOmgVideoView;
     private int mCurrentState;
 
     @Override
@@ -22,7 +21,6 @@ public class VideoWindowActivity extends AppCompatActivity {
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
         mAction = getIntent().getStringExtra("action");
-//        mOmgVideoView = (OmgVideoView) findViewById(R.id.video);
         mBaseVideoPlayer = BaseVideoPlayer.getStaticPlayer();
         ((ViewGroup)mBaseVideoPlayer.getParent()).removeView(mBaseVideoPlayer);
         mBaseVideoPlayer.setContext(this);

@@ -5,6 +5,8 @@ import android.graphics.SurfaceTexture;
 import android.net.Uri;
 import android.util.Log;
 import android.view.Gravity;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.view.TextureView;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -46,6 +48,10 @@ public class ExoPlayerManager implements TextureView.SurfaceTextureListener,
     private String mPath;
     private String mUserAgent;
 
+    private SurfaceView mSurfaceView;
+    private SurfaceHolder mSurfaceHolder;
+    private SurfaceHolder.Callback mSHCallback;
+
     private Context mContext;
     //listener
     IMediaPlayerControl.OnPreparedListener mOnPreparedListener;
@@ -77,7 +83,12 @@ public class ExoPlayerManager implements TextureView.SurfaceTextureListener,
     }
 
     private void openVideo() {
-        if (mPath == null || mTextureView == null) {
+        if (mPath == null ) {
+            Log.d(TAG, "video openVideo not ready");
+            return;
+        }
+        if(mSurfaceTexture == null && mSurfaceHolder == null) {
+            Log.e(TAG, "video openVideo: surface is null");
             return;
         }
         if (mExoPlayer != null) {
@@ -93,7 +104,11 @@ public class ExoPlayerManager implements TextureView.SurfaceTextureListener,
         mExoPlayer = ExoPlayerFactory.newSimpleInstance(mContext, trackSelector, loadControl);
         mExoPlayer.setVideoListener(this);
         mExoPlayer.addListener(this);
-        mExoPlayer.setVideoTextureView(mTextureView);
+        if (mTextureView != null) {
+            mExoPlayer.setVideoTextureView(mTextureView);
+        } else {
+            mExoPlayer.setVideoSurfaceView(mSurfaceView);
+        }
         mExoPlayer.prepare(videoSource);
     }
 
@@ -108,6 +123,34 @@ public class ExoPlayerManager implements TextureView.SurfaceTextureListener,
         mTextureView = textureView;
         mTextureView.setSurfaceTextureListener(this);
 //        mExoPlayer.setVideoTextureView(mTextureView);
+    }
+
+    @Override
+    public void setSurfaceView(ResizeSurfaceView surfaceView) {
+        mSurfaceView = surfaceView;
+        mSHCallback = new SurfaceHolder.Callback2() {
+            @Override
+            public void surfaceRedrawNeeded(SurfaceHolder holder) {
+
+            }
+
+            @Override
+            public void surfaceCreated(SurfaceHolder holder) {
+                mSurfaceHolder = holder;
+                openVideo();
+            }
+
+            @Override
+            public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+
+            }
+
+            @Override
+            public void surfaceDestroyed(SurfaceHolder holder) {
+                mSurfaceHolder = null;
+            }
+        };
+        mSurfaceView.getHolder().addCallback(mSHCallback);
     }
 
     /**
@@ -127,7 +170,16 @@ public class ExoPlayerManager implements TextureView.SurfaceTextureListener,
             layoutParams = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
             ((RelativeLayout.LayoutParams)layoutParams).addRule(RelativeLayout.CENTER_IN_PARENT);
         }
-        parent.addView(mTextureView, 0, layoutParams);
+        if (mTextureView != null && mTextureView.getParent() != null) {
+            ((ViewGroup) mTextureView.getParent()).removeView(mTextureView);
+            parent.addView(mTextureView, 0, layoutParams);
+        }
+        if (mSurfaceView != null ) {
+            if(mSurfaceView.getParent() != null) {
+                ((ViewGroup) mSurfaceView.getParent()).removeView(mSurfaceView);
+            }
+            parent.addView(mSurfaceView, 0, layoutParams);
+        }
     }
 
     @Override

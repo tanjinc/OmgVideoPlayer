@@ -8,10 +8,13 @@ import android.net.Uri;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.Surface;
+import android.view.SurfaceHolder;
+import android.view.SurfaceView;
 import android.view.TextureView;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.RelativeLayout;
+import android.widget.VideoView;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
@@ -31,7 +34,11 @@ public class MediaPlayerManager implements TextureView.SurfaceTextureListener, I
     private String mPath;
     public MediaPlayer mMediaPlayer;
     private PlayState mPlayState;
-    
+
+    private SurfaceView mSurfaceView;
+    private SurfaceHolder mSurfaceHolder;
+    private SurfaceHolder.Callback mSHCallback;
+
     //listener
     IMediaPlayerControl.OnPreparedListener mOnPreparedListener;
     IMediaPlayerControl.OnCompletionListener mOnCompletionListener;
@@ -215,11 +222,16 @@ public class MediaPlayerManager implements TextureView.SurfaceTextureListener, I
 
     long startTime = 0;
     private void openVideo() {
-        if (mPath == null || mSurfaceTexture == null) {
+        if (mPath == null ) {
             Log.d(TAG, "video openVideo not ready");
             return;
         }
+        if(mSurfaceTexture == null && mSurfaceHolder == null) {
+            Log.e(TAG, "video openVideo: surface is null");
+            return;
+        }
         try {
+
             mMediaPlayer.release();
             mMediaPlayer = new MediaPlayer();
             mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
@@ -238,7 +250,14 @@ public class MediaPlayerManager implements TextureView.SurfaceTextureListener, I
             mMediaPlayer.setOnVideoSizeChangedListener(mVideoSizeChangedListener);
             mMediaPlayer.prepareAsync();
 
-            mMediaPlayer.setSurface(new Surface(mSurfaceTexture));
+            if (mSurfaceHolder!=null) {
+                //使用surfaceView
+                mMediaPlayer.setDisplay(mSurfaceHolder);
+                mSurfaceView.invalidate();
+            } else {
+                //使用textureView
+                mMediaPlayer.setSurface(new Surface(mSurfaceTexture));
+            }
         } catch (Exception e) {
             Log.e(TAG, "video openVideo: ", e);
         }
@@ -259,6 +278,7 @@ public class MediaPlayerManager implements TextureView.SurfaceTextureListener, I
             mSurfaceTexture.release();
         }
         mTextureView = null;
+        mSurfaceView = null;
         mSurfaceTexture = null;
         mOnBufferingUpdateListener = null;
         mOnCompletionListener = null;
@@ -272,16 +292,41 @@ public class MediaPlayerManager implements TextureView.SurfaceTextureListener, I
         mTextureView.setSurfaceTextureListener(this);
     }
 
+    @Override
+    public void setSurfaceView(ResizeSurfaceView surfaceView) {
+        mSurfaceView = surfaceView;
+        mSHCallback = new SurfaceHolder.Callback2() {
+            @Override
+            public void surfaceRedrawNeeded(SurfaceHolder holder) {
+
+            }
+
+            @Override
+            public void surfaceCreated(SurfaceHolder holder) {
+                mSurfaceHolder = holder;
+                openVideo();
+            }
+
+            @Override
+            public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+
+            }
+
+            @Override
+            public void surfaceDestroyed(SurfaceHolder holder) {
+                mSurfaceHolder = null;
+            }
+        };
+        mSurfaceView.getHolder().addCallback(mSHCallback);
+    }
+
     /**
      *
      * @param parent 父控件,必须为FrameLayout或RelativeLayout
      */
     @Override
     public void setParentView(ViewGroup parent) {
-        if (mTextureView != null && mTextureView.getParent() != null) {
-            ((ViewGroup) mTextureView.getParent()).removeView(mTextureView);
 
-        }
         ViewGroup.LayoutParams layoutParams = null;
         if (parent instanceof FrameLayout) {
             layoutParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
@@ -290,7 +335,17 @@ public class MediaPlayerManager implements TextureView.SurfaceTextureListener, I
             layoutParams = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
             ((RelativeLayout.LayoutParams)layoutParams).addRule(RelativeLayout.CENTER_IN_PARENT);
         }
-        parent.addView(mTextureView, 0, layoutParams);
+        if (mTextureView != null && mTextureView.getParent() != null) {
+            ((ViewGroup) mTextureView.getParent()).removeView(mTextureView);
+            parent.addView(mTextureView, 0, layoutParams);
+        }
+        if (mSurfaceView != null ) {
+            if(mSurfaceView.getParent() != null) {
+                ((ViewGroup) mSurfaceView.getParent()).removeView(mSurfaceView);
+            }
+            parent.addView(mSurfaceView, 0, layoutParams);
+        }
+
     }
 
     @Override

@@ -7,15 +7,18 @@
               android:layout_width="wrap_content"
               android:layout_height="wrap_content">
     <ImageView
-        android:id="@+id/video_volume_img"
+        android:id="@+id/video_light_img"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:src="@drawable/exo_controls_rewind"/>
+        android:src="@drawable/om_video_player_ic_light"/>
     <TextView
-        android:id="@+id/video_volume_progress"
+        android:id="@+id/video_light_progress"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginStart="8dp"
+        android:layout_marginLeft="8dp"
         android:textColor="#FFF"
-        android:text= "89%"/>
+        android:text= "89%"
+        />
 
 </LinearLayout>

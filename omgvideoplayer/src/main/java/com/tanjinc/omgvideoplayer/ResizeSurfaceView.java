@@ -2,35 +2,28 @@ package com.tanjinc.omgvideoplayer;
 
 import android.content.Context;
 import android.util.AttributeSet;
-import android.util.Log;
-import android.view.TextureView;
+import android.view.SurfaceView;
 
-/**
- * Created by tanjincheng on 17/6/29.
- */
-public class ResizeTextureView extends TextureView {
-    private static final String TAG = "ResizeTextureView";
+public class ResizeSurfaceView extends SurfaceView {
+    private static final String TAG = "ResizeSurfaceView";
 
     private int mVideoWidth;
     private int mVideoHeight;
 
-    public static final int SCREEN_ADAPTATION = 0;  //屏幕等比自适应，无裁剪，无压缩，有可能黑边
-    public static final int FULL_SCREEN  = 1;       //铺满全屏，无裁剪，有可能压缩，无黑边
-    public static final int FULL_SCALE = 2;         //等比放大，有裁剪，无压缩，无黑边
-
     private BaseVideoPlayer.VideoViewType mSizeType;
-
-    public ResizeTextureView(Context context) {
+    public ResizeSurfaceView(Context context) {
         super(context);
     }
 
-    public ResizeTextureView(Context context, AttributeSet attrs) {
+    public ResizeSurfaceView(Context context, AttributeSet attrs) {
         super(context, attrs);
     }
 
-    public ResizeTextureView(Context context, AttributeSet attrs, int defStyleAttr) {
+    public ResizeSurfaceView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
     }
+
+
 
     public void setVideoSize(int width, int height) {
         mVideoWidth = width;

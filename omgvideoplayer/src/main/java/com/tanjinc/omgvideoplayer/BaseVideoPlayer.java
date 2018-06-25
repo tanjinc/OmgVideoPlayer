@@ -8,25 +8,21 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Outline;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
 import android.net.ConnectivityManager;
-import android.net.ConnectivityManager.OnNetworkActiveListener;
-import android.net.Uri;
-import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
-import android.provider.Settings;
 import android.support.annotation.CallSuper;
-import android.support.annotation.IdRes;
 import android.support.annotation.LayoutRes;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -39,17 +35,15 @@ import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
-import com.tanjinc.omgvideoplayer.annotation.GetViewTo;
 import com.tanjinc.omgvideoplayer.http.HttpGetProxy;
 import com.tanjinc.omgvideoplayer.utils.Utils;
 import com.tanjinc.omgvideoplayer.widget.BaseWidget;
+import com.tanjinc.omgvideoplayer.widget.OmLightWidget;
 import com.tanjinc.omgvideoplayer.widget.OmLoadWidget;
 import com.tanjinc.omgvideoplayer.widget.OmNetworkWarnWidget;
 import com.tanjinc.omgvideoplayer.widget.OmVolumeWidget;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
 
 
 /**
@@ -88,13 +82,40 @@ public abstract class BaseVideoPlayer extends FrameLayout implements
     private OmVolumeWidget mVolumeWidget;
     private OmLoadWidget mLoadWidget;
     private OmNetworkWarnWidget mNetworkWarnWidget;
+    private OmLightWidget mLightWidget;
 
 
+    /**
+     * 屏幕适配
+     */
+    public enum VideoViewType {
+        SCREEN_ADAPTATION,  //屏幕等比自适应，无裁剪，无压缩，有可能黑边
+        FULL_SCREEN,        //铺满全屏，无裁剪，有可能压缩，无黑边
+        FULL_SCALE          ////等比放大，有裁剪，无压缩，无黑边
+    }
+
+    /**
+     * 显示方式
+     */
+    public enum DisplayType {
+        SurfaceView,
+        TextureView
+    }
+
+    /**
+     * 播放器类型
+     */
     public enum VideoPlayerType {
         MEDIA_PLAYER,
         EXO_PLAYER
     }
+
+    private VideoViewType mVideoViewType = VideoViewType.SCREEN_ADAPTATION;
+    private DisplayType mDisplayType = DisplayType.TextureView;
     private VideoPlayerType mVideoPlayerType = VideoPlayerType.MEDIA_PLAYER;
+
+
+
 
     //ui
     protected View mStartBtn;
@@ -136,6 +157,7 @@ public abstract class BaseVideoPlayer extends FrameLayout implements
     private String mVideoTitle;
 
     private ResizeTextureView mTextureView;
+    private ResizeSurfaceView mSurfaceView;
     private Context mContext;
     private Context mSaveContext;
 
@@ -157,12 +179,33 @@ public abstract class BaseVideoPlayer extends FrameLayout implements
     public BaseVideoPlayer(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         mContext = context;
-        mTextureView = new ResizeTextureView(context.getApplicationContext());
-        setRootView(mVideoPlayerRoot);
+        setMiniLayoutId(R.layout.om_video_mini_layout);         //设置小窗布局
+        setFullLayoutId(R.layout.om_video_fullscreen_layout);   //设置全局布局
+        setFloatLayoutId(R.layout.om_video_float_layout);       //设置悬浮窗布局
+
+        registerWidget(WidgetType.LOADING, R.layout.om_video_loading_view);
+        registerWidget(WidgetType.VOLUME, R.layout.om_video_volume_progress_layout);
+        //registerWidget(WidgetType.NETWORK, R.layout.om_video_network_warn_layout);
     }
 
-    public BaseVideoPlayer setType(VideoPlayerType playerType) {
+    public BaseVideoPlayer setMediaType(VideoPlayerType playerType) {
         mVideoPlayerType = playerType;
+        return this;
+    }
+
+    public BaseVideoPlayer setDisplayType(DisplayType displayType) {
+        mDisplayType = displayType;
+        return this;
+    }
+
+    public BaseVideoPlayer setVideoViewType(VideoViewType videoViewType) {
+        mVideoViewType = videoViewType;
+        if (mSurfaceView != null) {
+            mSurfaceView.setVideoViewSize(mVideoViewType);
+        }
+        if (mTextureView != null) {
+            mTextureView.setVideoViewSize(mVideoViewType);
+        }
         return this;
     }
 
@@ -176,7 +219,16 @@ public abstract class BaseVideoPlayer extends FrameLayout implements
         } else {
             mMediaPlayerManager = new MediaPlayerManager(mContext);
         }
-        mMediaPlayerManager.setTextureView(mTextureView);
+
+        if (mDisplayType == DisplayType.TextureView) {
+            mTextureView = new ResizeTextureView(mContext);
+            mMediaPlayerManager.setTextureView(mTextureView);
+            mTextureView.setVideoViewSize(mVideoViewType);
+        } else if (mDisplayType == DisplayType.SurfaceView) {
+            mSurfaceView = new ResizeSurfaceView(mContext);
+            mMediaPlayerManager.setSurfaceView(mSurfaceView);
+            mSurfaceView.setVideoViewSize(mVideoViewType);
+        }
         mMediaPlayerManager.setOnInfoListener(this);
         mMediaPlayerManager.setOnBufferingUpdateListener(this);
         mMediaPlayerManager.setOnCompletionListener(this);
@@ -184,21 +236,6 @@ public abstract class BaseVideoPlayer extends FrameLayout implements
 
         mAudioManager = (AudioManager) getContext().getSystemService(Context.AUDIO_SERVICE);
         isFull = false;
-    }
-
-    private void initVolume() {
-        try {
-            mAudioManager = (AudioManager) getContext().getSystemService(Context.AUDIO_SERVICE);
-
-            if (mAudioManager != null) {
-//                mMaxVolume = mAudioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC);
-//                mCurrentVolume = mAudioManag`er.getStreamVolume(AudioManager.STREAM_MUSIC);
-//                mVolumeStep = (mMaxVolume / 15) != 0 ? (mMaxVolume / 15) : 1;
-//                mVolumeProgress = mCurrentVolume * SEEK_MAX / mMaxVolume;
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "void initVolume: ", e);
-        }
     }
 
     @SuppressLint("HandlerLeak")
@@ -304,10 +341,6 @@ public abstract class BaseVideoPlayer extends FrameLayout implements
         }
     }
 
-    public void setOutLineRadius(int radius) {
-        setOutlineProvider(new TextureVideoViewOutlineProvider(50));
-        setClipToOutline(true);
-    }
 
     public BaseVideoPlayer setMiniLayoutId(@LayoutRes int id) {
         mMiniLayoutId = id;
@@ -330,6 +363,7 @@ public abstract class BaseVideoPlayer extends FrameLayout implements
         ERROR,
         NETWORK,
         VOLUME,
+        LIGHT,
     }
     private ArrayList<BaseWidget> mWidgetArrayList = new ArrayList<>();
 
@@ -348,6 +382,10 @@ public abstract class BaseVideoPlayer extends FrameLayout implements
             case NETWORK:
                 mNetworkWarnWidget = new OmNetworkWarnWidget(this, layoutId);
                 mWidgetArrayList.add(mNetworkWarnWidget);
+                break;
+            case LIGHT:
+                mLightWidget = new OmLightWidget(layoutId);
+                mWidgetArrayList.add(mLightWidget);
                 break;
         }
     }
@@ -411,7 +449,7 @@ public abstract class BaseVideoPlayer extends FrameLayout implements
             mCloseBtn.setOnClickListener(this);
         }
 
-       // mTopLayout = findViewById(R.id.top_layout);
+        mTopLayout = findViewById(R.id.top_layout);
         //mBottomLayout = findViewById(R.id.bottom_layout);
 //        mLeftLayout = findViewById(R.id.left_layout);
 //        mRightLayout = findViewById(R.id.right_layout);
@@ -425,6 +463,9 @@ public abstract class BaseVideoPlayer extends FrameLayout implements
         mVideoContainer.setOnTouchListener(this);
         mMediaPlayerManager.setParentView(mVideoContainer);
 
+        if (mGuestureListenr == null) {
+            mGuestureListenr = new VideoGestureListener(getContext(), new GestureListener());
+        }
         mContext.registerReceiver(mNetworkReceiver, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
         mHaveRegisted = true;
     }
@@ -570,13 +611,13 @@ public abstract class BaseVideoPlayer extends FrameLayout implements
         switch (keyCode) {
             case KeyEvent.KEYCODE_VOLUME_DOWN:
                 if (mVolumeWidget != null) {
-                    int volume = mVolumeWidget.getVolume();
-                    mVolumeWidget.setProgress(--volume);
+                    mVolumeWidget.setKeyVolumeChange(false);
                 }
                 return true;
             case KeyEvent.KEYCODE_VOLUME_UP:
-                int volume = mVolumeWidget.getVolume();
-                mVolumeWidget.setProgress(++volume);
+                if (mVolumeWidget != null) {
+                    mVolumeWidget.setKeyVolumeChange(true);
+                }
                 return true;
             case KeyEvent.KEYCODE_BACK:
                 if (isFull) {
@@ -584,6 +625,19 @@ public abstract class BaseVideoPlayer extends FrameLayout implements
                 }
         }
         return false;
+    }
+
+    public Bitmap getScreenShort() {
+        if (mTextureView != null) {
+            return mTextureView.getBitmap();
+        }
+        if (mSurfaceView != null) {
+            Bitmap bitmap = Bitmap.createBitmap(getWidth(), getHeight(), Bitmap.Config.ARGB_8888);
+            Canvas canvas = mSurfaceView.getHolder().lockCanvas();
+            canvas.drawBitmap(bitmap,0, 0, null);
+            return bitmap;
+        }
+        return null;
     }
 
     public void switchToFull() {
@@ -722,6 +776,7 @@ public abstract class BaseVideoPlayer extends FrameLayout implements
     }
 
     public void setVideoUrl(String videoPath) {
+        Log.d(TAG, "video setVideoUrl: ");
         if (mMediaPlayerManager == null) {
             initMediaPlayer();
         }
@@ -894,23 +949,141 @@ public abstract class BaseVideoPlayer extends FrameLayout implements
         return super.onInterceptTouchEvent(ev);
     }
 
+    private class GestureListener extends VideoGestureListener.SimpleOnGestureListener {
+        private float MIN_DISTANCE = 6.0f;
+        private boolean mIsFirstScroll = true;
+        private float mDownX;
+        private float mDownY;
+        private GestureOrientation mGestureOrientation;
 
-    public class TextureVideoViewOutlineProvider extends ViewOutlineProvider {
-        private float mRadius;
-
-        public TextureVideoViewOutlineProvider(float radius) {
-            this.mRadius = radius;
+        @Override
+        public boolean onSingleTapConfirmed(MotionEvent e) {
+            if (mIsControllerShowing) {
+                hideController();
+            } else {
+                showController();
+            }
+            return true;
         }
 
         @Override
-        public void getOutline(View view, Outline outline) {
-            Rect rect = new Rect();
-            view.getGlobalVisibleRect(rect);
-            int leftMargin = 0;
-            int topMargin = 0;
-            Rect selfRect = new Rect(leftMargin, topMargin,
-                    rect.right - rect.left - leftMargin, rect.bottom - rect.top - topMargin);
-            outline.setRoundRect(selfRect, mRadius);
+        public void onLongPress(MotionEvent e) {
+        }
+
+        @Override
+        public boolean onDoubleTap(MotionEvent e) {
+            return true;
+        }
+
+
+        @Override
+        public boolean onDown(MotionEvent e) {
+            Log.d(TAG, "GestureListener onDown:" + e);
+            mDownX = e.getX();
+            mDownY = e.getY();
+            mSysBrightness = ScreenUtils.getCurScreenBrightness(getContext());
+            mGestureOrientation = GestureOrientation.getInstance(e.getX(), e.getY());
+            return true;
+        }
+
+        @Override
+        public boolean onUp(MotionEvent e) {
+//            if (mIsSetSeek) {
+//                mCurrentState = STATE_PLAYING;
+//                seekTo((int) mCurrentPosition);
+//                start();
+//                mHandler.removeMessages(MSG_HIDE_SEEK_VIEW);
+//                mHandler.sendEmptyMessageDelayed(MSG_HIDE_SEEK_VIEW, GESTURE_WIDGET_DISMISS_TIME);
+//            }
+            if (mVolumeWidget != null && mVolumeWidget.isShown()) {
+                mVolumeWidget.showWithAutoHide(1000);
+            }
+            if (mLightWidget != null && mLightWidget.isShown()) {
+                mLightWidget.showWithAutoHide(1000);
+            }
+
+            mIsFirstScroll = true;
+            mDownX = -1.0f;
+            mDownY = -1.0f;
+            mOldX = -1;
+            mOldY = -1;
+            return true;
+
+        }
+
+        @Override
+        public void onCancel(MotionEvent e) {
+            Log.d(TAG, "video OnCancel");
+            mIsFirstScroll = true;
+            mDownX = -1.0f;
+            mDownY = -1.0f;
+        }
+
+        @Override
+        public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
+            if (!isFull) {
+                return true;
+            }
+            try {
+                if ((Math.abs(e2.getX() - mDownX) > MIN_DISTANCE || Math.abs(e2.getY() - mDownY) > MIN_DISTANCE)) {
+//                    mIsFirstScroll = false;
+                    GestureOrientation.ScrollOrientation mScrollOrientation = mGestureOrientation.computeFirstAngle(e2.getX(), e2.getY());
+
+                    if (GestureOrientation.ScrollOrientation.SCROLL_INVALID == mScrollOrientation) {
+
+                    } else if (GestureOrientation.ScrollOrientation.SCROLL_HORIZONTAL == mScrollOrientation) {
+//                        if (mIsSetVolumeLight) {
+//                            return true;
+//                        }
+//                        if (mCurrentState != STATE_PLAYBACK_COMPLETED) {
+//                            hideController();
+//                        }
+//                        mIsSetSeek = true;
+//                        if (isPlaying()) {
+//                            pause();
+//                        }
+//                        onSeekbarProgressTouch(mSeekbar, e2);
+                    } else {
+                        if (e1.getY() < mScreenHeight * 0.1f || mIsSetSeek) {
+                            return true;
+                        }
+                        mIsSetVolumeLight = true;
+                        if (mControllerShowing) {
+                            hideController();
+                        }
+                        if (e1.getX() > mScreenWidth * 0.5f) {
+                            int scrollProgress = (int) (distanceY * SEEK_MAX / (mScreenHeight * 0.8));
+                            mVolumeProgress += scrollProgress;
+                            if (mVolumeProgress >= SEEK_MAX) {
+                                mVolumeProgress = SEEK_MAX;
+                            }
+                            if (mVolumeProgress <= 0) {
+                                mVolumeProgress = 0;
+                            }
+
+                            mCurrentVolume = mVolumeProgress * mMaxVolume / SEEK_MAX;
+                            changeVolume();
+                            if (mVolumeWidget != null) {
+                                mVolumeWidget.getVolume()
+                            }
+                        } else {
+                            int scrollProgress = (int) (distanceY * SEEK_MAX / (mScreenHeight * 0.8));
+                            mLightProgress += scrollProgress;
+                            if (mLightProgress >= SEEK_MAX) {
+                                mLightProgress = SEEK_MAX;
+                            }
+                            if (mLightProgress <= 0) {
+                                mLightProgress = 0;
+                            }
+                            changeLight();
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "video onScroll Exception: " + e);
+            }
+            return true;
         }
     }
+
 }

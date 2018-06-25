@@ -1,6 +1,8 @@
 package com.tanjinc.omgvideoplayer.widget;
 
 import android.content.Context;
+import android.os.Handler;
+import android.os.Message;
 import android.support.annotation.CallSuper;
 import android.support.annotation.IdRes;
 import android.support.annotation.LayoutRes;
@@ -11,6 +13,8 @@ import android.view.ViewGroup;
 
 import com.tanjinc.omgvideoplayer.BaseVideoPlayer;
 
+import java.lang.ref.WeakReference;
+
 import static android.view.View.VISIBLE;
 
 /**
@@ -19,9 +23,13 @@ import static android.view.View.VISIBLE;
 
 public abstract class BaseWidget {
 
+    protected static final int MSG_WIDGET_SHOW = 1000;
+    protected static final int MSG_WIDGET_HIDE = 1001;
+
     private View mWidgetRoot;
     private  @LayoutRes int mId;
     private BaseVideoPlayer mBaseVideoPlayer;
+    protected MyHandler mHandler;
 
     public BaseWidget(@LayoutRes int id) {
         mId = id;
@@ -58,6 +66,9 @@ public abstract class BaseWidget {
         }
         parent.addView(mWidgetRoot, mWidgetRoot.getLayoutParams());
         mWidgetRoot.setVisibility(View.GONE);
+        if (mHandler == null) {
+            mHandler = new MyHandler(this);
+        }
     }
 
 
@@ -69,6 +80,13 @@ public abstract class BaseWidget {
     public void show() {
         if (mWidgetRoot != null) {
             mWidgetRoot.setVisibility(VISIBLE);
+        }
+    }
+
+    public void showWithAutoHide(int delay) {
+        if (mHandler != null) {
+            mHandler.removeMessages(MSG_WIDGET_HIDE);
+            mHandler.sendEmptyMessageDelayed(MSG_WIDGET_HIDE, delay);
         }
     }
 
@@ -85,6 +103,33 @@ public abstract class BaseWidget {
     public void release () {
         if (mBaseVideoPlayer != null) {
             mBaseVideoPlayer = null;
+        }
+    }
+
+
+    static class MyHandler extends Handler {
+
+        WeakReference<BaseWidget> mWeakReference;
+
+        MyHandler(BaseWidget widget) {
+            mWeakReference = new WeakReference<>(widget);
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            switch (msg.what) {
+                case MSG_WIDGET_SHOW:
+                    if (mWeakReference != null && mWeakReference.get() != null) {
+                        mWeakReference.get().show();
+                    }
+                    break;
+                case MSG_WIDGET_HIDE:
+                    if (mWeakReference != null && mWeakReference.get() != null) {
+                        mWeakReference.get().hide();
+                    }
+                    break;
+            }
         }
     }
 }

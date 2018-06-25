@@ -76,6 +76,7 @@ public interface IMediaPlayerControl extends MediaController.MediaPlayerControl 
     void setVideoPath(String path);
     void setParentView(ViewGroup parent);
     void setTextureView(ResizeTextureView textView);
+    void setSurfaceView(ResizeSurfaceView surfaceView);
 
     interface MediaPlayerControl {
         void start();
