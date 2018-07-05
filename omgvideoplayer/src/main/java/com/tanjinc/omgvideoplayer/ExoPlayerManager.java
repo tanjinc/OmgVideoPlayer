@@ -87,10 +87,11 @@ public class ExoPlayerManager implements TextureView.SurfaceTextureListener,
             Log.d(TAG, "video openVideo not ready");
             return;
         }
-        if(mSurfaceTexture == null && mSurfaceHolder == null) {
-            Log.e(TAG, "video openVideo: surface is null");
-            return;
-        }
+//        if(mSurfaceTexture == null && mSurfaceHolder == null) {
+//            Log.e(TAG, "video openVideo: surface is null");
+//            return;
+//        }
+        prepared = false;
         if (mExoPlayer != null) {
             mExoPlayer.release();
         }
@@ -159,20 +160,19 @@ public class ExoPlayerManager implements TextureView.SurfaceTextureListener,
      */
     @Override
     public void setParentView(ViewGroup parent) {
-        if (mTextureView != null && mTextureView.getParent() != null) {
-            ((ViewGroup) mTextureView.getParent()).removeView(mTextureView);
-        }
         ViewGroup.LayoutParams layoutParams = null;
         if (parent instanceof FrameLayout) {
-            layoutParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            layoutParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
             ((FrameLayout.LayoutParams)layoutParams).gravity = Gravity.CENTER;
         } else if (parent instanceof RelativeLayout) {
-            layoutParams = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            layoutParams = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
             ((RelativeLayout.LayoutParams)layoutParams).addRule(RelativeLayout.CENTER_IN_PARENT);
         }
-        if (mTextureView != null && mTextureView.getParent() != null) {
-            ((ViewGroup) mTextureView.getParent()).removeView(mTextureView);
-            parent.addView(mTextureView, 0, layoutParams);
+        if (mTextureView != null) {
+            if ( mTextureView.getParent() == null) {
+                //((ViewGroup) mTextureView.getParent()).removeView(mTextureView);
+                parent.addView(mTextureView, 0, layoutParams);
+            }
         }
         if (mSurfaceView != null ) {
             if(mSurfaceView.getParent() != null) {
@@ -306,12 +306,14 @@ public class ExoPlayerManager implements TextureView.SurfaceTextureListener,
 
     }
 
+    boolean prepared;
     @Override
     public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
         switch (playbackState) {
             case ExoPlayer.STATE_READY:
-                if (mOnPreparedListener != null) {
+                if (mOnPreparedListener != null && !prepared) {
                     mOnPreparedListener.onPrepared();
+                    prepared = true;
                 }
                 break;
             case ExoPlayer.STATE_BUFFERING:

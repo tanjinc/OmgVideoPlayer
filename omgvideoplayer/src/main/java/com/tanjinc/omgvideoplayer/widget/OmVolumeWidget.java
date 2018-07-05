@@ -83,8 +83,6 @@ public class OmVolumeWidget extends BaseWidget{
     }
 
     public int getVolume() {
-        String a;
-        a.getChars();
         return mCurrentVolume;
     }
 
