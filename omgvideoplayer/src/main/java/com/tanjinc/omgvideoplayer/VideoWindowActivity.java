@@ -1,5 +1,6 @@
 package com.tanjinc.omgvideoplayer;
 
+import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -27,6 +28,8 @@ public class VideoWindowActivity extends AppCompatActivity {
         mBaseVideoPlayer.setRootView((ViewGroup) findViewById(R.id.full_container));
         mBaseVideoPlayer.setContentView(getIntent().getIntExtra("full_layout_id", 0));
         mCurrentState = getIntent().getIntExtra("current_state", 0);
+
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_USER_LANDSCAPE);
     }
 
     @Override
@@ -73,11 +76,17 @@ public class VideoWindowActivity extends AppCompatActivity {
         if (!mAction.equals(BaseVideoPlayer.ACTION_SWITCH_TO_FULL)) {
             BaseVideoPlayer.releaseStaticPlayer();
         }
+        mBaseVideoPlayer.resetRootView();
         super.onDestroy();
     }
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
+    }
+    @Override
+    public void finish() {
+        super.finish();
+        overridePendingTransition(0, 0);
     }
 }

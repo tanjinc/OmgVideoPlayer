@@ -650,7 +650,7 @@ public abstract class BaseVideoPlayer extends FrameLayout implements
         intent.putExtra("current_state", mCurrentState);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         mContext.startActivity(intent);
-
+        ((Activity)mContext).overridePendingTransition(0, 0);
     }
 
     public static void setStaticPlayer(BaseVideoPlayer player) {
@@ -667,6 +667,12 @@ public abstract class BaseVideoPlayer extends FrameLayout implements
     }
 
     public void exitFull() {
+        if (mContext == null) {
+            ((Activity)mContext).finish();
+        }
+    }
+
+    public void resetRootView() {
         isFull = false;
         mContext = mSaveContext;
         mSaveContext = null;

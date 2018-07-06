@@ -107,8 +107,10 @@ public class ExoPlayerManager implements TextureView.SurfaceTextureListener,
         mExoPlayer.addListener(this);
         if (mTextureView != null) {
             mExoPlayer.setVideoTextureView(mTextureView);
+            mTextureView.setSurfaceTextureListener(this);
         } else {
             mExoPlayer.setVideoSurfaceView(mSurfaceView);
+            mSurfaceView.getHolder().addCallback(mSHCallback);
         }
         mExoPlayer.prepare(videoSource);
     }
@@ -122,8 +124,6 @@ public class ExoPlayerManager implements TextureView.SurfaceTextureListener,
     public void setTextureView(ResizeTextureView textureView) {
         Log.d(TAG, "video setTextureView: " + textureView);
         mTextureView = textureView;
-        mTextureView.setSurfaceTextureListener(this);
-//        mExoPlayer.setVideoTextureView(mTextureView);
     }
 
     @Override
@@ -202,7 +202,6 @@ public class ExoPlayerManager implements TextureView.SurfaceTextureListener,
             openVideo();
         } else {
             mTextureView.setSurfaceTexture(mSurfaceTexture);
-            mExoPlayer.setVideoTextureView(mTextureView);
         }
     }
 
