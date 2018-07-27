@@ -11,19 +11,19 @@ import android.content.Context;
 public class SampleVideoPlayer extends BaseVideoPlayer{
     private static final String TAG = "SampleVideoPlayer";
 
-    public SampleVideoPlayer(Context context) {
-        super(context);
-        setMediaType(VideoPlayerType.EXO_PLAYER);
-        setDisplayType(DisplayType.TextureView);
+    public SampleVideoPlayer(Context context, MediaPlayerType mediaPlayerType) {
 
-        setMiniLayoutId(R.layout.om_video_mini_layout);         //设置小窗布局
-        setFullLayoutId(R.layout.om_video_fullscreen_layout);   //设置全局布局
-        setFloatLayoutId(R.layout.om_video_float_layout);       //设置悬浮窗布局
+        super(context,
+                new Builder()
+                        .setMiniLayoutId(R.layout.om_video_mini_layout)
+                        .setFullLayoutId(R.layout.om_video_fullscreen_layout)
+                        .setFloatLayoutId(R.layout.om_video_float_layout)
+                .setDisplayType(DisplayType.TextureView)
+                .setMediaType(mediaPlayerType)
+        );
 
         registerWidget(WidgetType.LOADING, R.layout.om_video_loading_view);
         registerWidget(WidgetType.VOLUME, R.layout.om_video_volume_progress_layout);
-        //registerWidget(WidgetType.NETWORK, R.layout.om_video_network_warn_layout);
-        init();
     }
 
 }

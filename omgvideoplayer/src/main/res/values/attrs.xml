@@ -1,10 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <declare-styleable name="OmgVideoView">
-        <attr name="mini_layout" format="reference"/>
-        <attr name="full_layout" format="reference"/>
-        <attr name="preImage" format="reference"/>
-        <attr name="prePlayBtn" format="reference"/>
-        <attr name="preLoading" format="reference"/>
-    </declare-styleable>
+
 </resources>

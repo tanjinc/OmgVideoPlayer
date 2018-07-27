@@ -14,10 +14,8 @@ import android.view.TextureView;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
 import android.widget.RelativeLayout;
-import android.widget.VideoView;
 
 import java.lang.reflect.Method;
-import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -31,7 +29,7 @@ public class MediaPlayerManager implements TextureView.SurfaceTextureListener, I
     private SurfaceTexture mSurfaceTexture;
     private ResizeTextureView mTextureView;
     private Uri mUri;
-    private String mPath;
+    private String mVideoUrl;
     public MediaPlayer mMediaPlayer;
     private PlayState mPlayState;
 
@@ -222,7 +220,7 @@ public class MediaPlayerManager implements TextureView.SurfaceTextureListener, I
 
     long startTime = 0;
     private void openVideo() {
-        if (mPath == null ) {
+        if (mVideoUrl == null ) {
             Log.d(TAG, "video openVideo not ready");
             return;
         }
@@ -239,7 +237,7 @@ public class MediaPlayerManager implements TextureView.SurfaceTextureListener, I
             Class<MediaPlayer> clazz = MediaPlayer.class;
             Method method = clazz.getDeclaredMethod("setDataSource", String.class, Map.class);
             startTime = System.currentTimeMillis();
-            mMediaPlayer.setDataSource(mPath);
+            mMediaPlayer.setDataSource(mVideoUrl);
             mMediaPlayer.setLooping(false);
             mMediaPlayer.setOnPreparedListener(mPreparedListener);
             mMediaPlayer.setOnCompletionListener(mCompletionListener);
@@ -263,8 +261,9 @@ public class MediaPlayerManager implements TextureView.SurfaceTextureListener, I
         }
     }
 
-    public void setVideoPath(String path) {
-        mPath = path;
+    @Override
+    public void setVideoUrl(String path) {
+        mVideoUrl = path;
         openVideo();
     }
 
@@ -335,8 +334,11 @@ public class MediaPlayerManager implements TextureView.SurfaceTextureListener, I
             layoutParams = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
             ((RelativeLayout.LayoutParams)layoutParams).addRule(RelativeLayout.CENTER_IN_PARENT);
         }
-        if (mTextureView != null && mTextureView.getParent() != null) {
-            ((ViewGroup) mTextureView.getParent()).removeView(mTextureView);
+
+        if (mTextureView != null) {
+            if ( mTextureView.getParent() != null) {
+                ((ViewGroup) mTextureView.getParent()).removeView(mTextureView);
+            }
             parent.addView(mTextureView, 0, layoutParams);
         }
         if (mSurfaceView != null ) {

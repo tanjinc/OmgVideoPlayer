@@ -6,7 +6,7 @@ import com.bumptech.glide.Glide;
 
 public class ImageUtils {
     public static void loadImage(String url, ImageView imageView) {
-        Glide.with(imageView.getContext()).load(url).fitCenter().into(imageView);
+        Glide.with(imageView.getContext()).load(url).into(imageView);
     }
 
 //    public static void loadImageBlur(String url, ImageView imageView, int radius) {

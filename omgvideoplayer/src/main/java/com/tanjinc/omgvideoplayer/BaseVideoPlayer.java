@@ -11,8 +11,6 @@ import android.content.ServiceConnection;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
-import android.graphics.Outline;
-import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
 import android.net.ConnectivityManager;
@@ -21,21 +19,18 @@ import android.os.IBinder;
 import android.os.Message;
 import android.support.annotation.CallSuper;
 import android.support.annotation.LayoutRes;
-import android.util.AttributeSet;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.ViewOutlineProvider;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
-import com.tanjinc.omgvideoplayer.http.HttpGetProxy;
 import com.tanjinc.omgvideoplayer.utils.Utils;
 import com.tanjinc.omgvideoplayer.widget.BaseWidget;
 import com.tanjinc.omgvideoplayer.widget.OmLightWidget;
@@ -49,7 +44,7 @@ import java.util.ArrayList;
 /**
  * Created by tanjincheng on 17/7/1.
  */
-public abstract class BaseVideoPlayer extends FrameLayout implements
+public class BaseVideoPlayer extends FrameLayout implements
         View.OnClickListener,
         View.OnTouchListener,
         SeekBar.OnSeekBarChangeListener,
@@ -105,14 +100,14 @@ public abstract class BaseVideoPlayer extends FrameLayout implements
     /**
      * 播放器类型
      */
-    public enum VideoPlayerType {
+    public enum MediaPlayerType {
         MEDIA_PLAYER,
         EXO_PLAYER
     }
 
     private VideoViewType mVideoViewType = VideoViewType.SCREEN_ADAPTATION;
     private DisplayType mDisplayType = DisplayType.TextureView;
-    private VideoPlayerType mVideoPlayerType = VideoPlayerType.MEDIA_PLAYER;
+    private MediaPlayerType mMediaPlayerType = MediaPlayerType.MEDIA_PLAYER;
 
 
 
@@ -141,10 +136,7 @@ public abstract class BaseVideoPlayer extends FrameLayout implements
     private boolean isFull;
     private boolean mScreenOn = true;
     private boolean mIsControllerShowing = true;
-    private boolean mHaveRegisted;
-
-    private boolean mUsePreBuffer;
-    private HttpGetProxy mHttpGetProxy;
+    private boolean mHaveRegister;
 
     private int mCurrentPosition;
     private int mDuration;
@@ -168,34 +160,31 @@ public abstract class BaseVideoPlayer extends FrameLayout implements
     public static final String ACTION_SWITCH_TO_FULL = "action_switch_to_full";
     public static final String FULL_SCREEN_LAYOUT_ID = "full_screen_layout_id";
 
-    public BaseVideoPlayer(Context context) {
-        this(context, null);
+
+    protected BaseVideoPlayer(Context context) {
+        this(context, new Builder());
     }
 
-    public BaseVideoPlayer(Context context, AttributeSet attrs) {
-        this(context, attrs, 0);
-    }
-
-    public BaseVideoPlayer(Context context, AttributeSet attrs, int defStyleAttr) {
-        super(context, attrs, defStyleAttr);
+    public BaseVideoPlayer(Context context, Builder builder) {
+        super(context);
         mContext = context;
-        setMiniLayoutId(R.layout.om_video_mini_layout);         //设置小窗布局
-        setFullLayoutId(R.layout.om_video_fullscreen_layout);   //设置全局布局
-        setFloatLayoutId(R.layout.om_video_float_layout);       //设置悬浮窗布局
+        if (builder.getMediaPlayerType() != null) {
+            mMediaPlayerType = builder.getMediaPlayerType();
+        }
+        if (builder.getDisplayType() != null) {
+            mDisplayType = builder.getDisplayType();
+        }
+        if (builder.getVideoViewType() != null) {
+            mVideoViewType = builder.getVideoViewType();
+        }
 
-        registerWidget(WidgetType.LOADING, R.layout.om_video_loading_view);
-        registerWidget(WidgetType.VOLUME, R.layout.om_video_volume_progress_layout);
-        //registerWidget(WidgetType.NETWORK, R.layout.om_video_network_warn_layout);
-    }
+        mMiniLayoutId = builder.getMiniId();
+        mFullLayoutId = builder.getFullId();
+        mFloatLayoutId = builder.getFloatId();
 
-    public BaseVideoPlayer setMediaType(VideoPlayerType playerType) {
-        mVideoPlayerType = playerType;
-        return this;
-    }
+        mAudioManager = (AudioManager) getContext().getSystemService(Context.AUDIO_SERVICE);
 
-    public BaseVideoPlayer setDisplayType(DisplayType displayType) {
-        mDisplayType = displayType;
-        return this;
+        initMediaPlayer();
     }
 
     public BaseVideoPlayer setVideoViewType(VideoViewType videoViewType) {
@@ -209,12 +198,8 @@ public abstract class BaseVideoPlayer extends FrameLayout implements
         return this;
     }
 
-    public void init() {
-        initMediaPlayer();
-    }
-
     private void initMediaPlayer() {
-        if (mVideoPlayerType == VideoPlayerType.EXO_PLAYER) {
+        if (mMediaPlayerType == MediaPlayerType.EXO_PLAYER) {
             mMediaPlayerManager = new ExoPlayerManager(mContext);
         } else {
             mMediaPlayerManager = new MediaPlayerManager(mContext);
@@ -234,7 +219,6 @@ public abstract class BaseVideoPlayer extends FrameLayout implements
         mMediaPlayerManager.setOnCompletionListener(this);
         mMediaPlayerManager.setOnPreparedListener(this);
 
-        mAudioManager = (AudioManager) getContext().getSystemService(Context.AUDIO_SERVICE);
         isFull = false;
     }
 
@@ -342,20 +326,6 @@ public abstract class BaseVideoPlayer extends FrameLayout implements
     }
 
 
-    public BaseVideoPlayer setMiniLayoutId(@LayoutRes int id) {
-        mMiniLayoutId = id;
-        return this;
-    }
-
-    public BaseVideoPlayer setFullLayoutId(@LayoutRes int id) {
-        mFullLayoutId = id;
-        return this;
-    }
-
-    public BaseVideoPlayer setFloatLayoutId(@LayoutRes int id) {
-        mFloatLayoutId = id;
-        return this;
-    }
 
 
     public enum WidgetType {
@@ -397,15 +367,11 @@ public abstract class BaseVideoPlayer extends FrameLayout implements
     }
 
     public void setContext(Context context) {
-        if (mHaveRegisted && mSaveContext != null) {
+        if (mHaveRegister && mSaveContext != null) {
             mSaveContext.unregisterReceiver(mNetworkReceiver);
         }
         mSaveContext = mContext;
         mContext = context;
-    }
-
-    public void setVideoPlayerType(VideoPlayerType type) {
-        mVideoPlayerType = type;
     }
 
     public void setContentView(@LayoutRes int id) {
@@ -466,8 +432,30 @@ public abstract class BaseVideoPlayer extends FrameLayout implements
 //        if (mGuestureListenr == null) {
 //            mGuestureListenr = new VideoGestureListener(getContext(), new GestureListener());
 //        }
-        mContext.registerReceiver(mNetworkReceiver, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
-        mHaveRegisted = true;
+        registerReceiver();
+    }
+
+
+    public void registerReceiver() {
+        if (mContext!= null && !mHaveRegister) {
+            try {
+                mContext.registerReceiver(mNetworkReceiver, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
+                mHaveRegister = true;
+            } catch (Exception e) {
+                Log.e(TAG, "video registerReceiver: ", e);
+            }
+        }
+    }
+
+    public void unRegisterReceiver() {
+        if (mContext!= null && mHaveRegister) {
+            try {
+                mContext.unregisterReceiver(mNetworkReceiver);
+                mHaveRegister = false;
+            } catch (Exception e) {
+                Log.e(TAG, "video unRegisterReceiver: ", e);
+            }
+        }
     }
 
     public void setScreenOnWhilePlaying(boolean screenOn) {
@@ -670,6 +658,7 @@ public abstract class BaseVideoPlayer extends FrameLayout implements
         if (mContext == null) {
             ((Activity)mContext).finish();
         }
+        unRegisterReceiver();
     }
 
     public void resetRootView() {
@@ -762,15 +751,15 @@ public abstract class BaseVideoPlayer extends FrameLayout implements
         if (isFloat && mFloatService != null) {
             mFloatService.stop();
         }
-        if (mHaveRegisted && mContext != null) {
-            mContext.unregisterReceiver(mNetworkReceiver);
-        }
+
         if (mWidgetArrayList != null) {
             for (BaseWidget widget : mWidgetArrayList) {
                 widget.release();
             }
         }
+        unRegisterReceiver();
         mMediaPlayerManager.release();
+        mMediaPlayerManager = null;
         releaseStaticPlayer();
         setScreenOn(false);
         mContext = null;
@@ -778,16 +767,13 @@ public abstract class BaseVideoPlayer extends FrameLayout implements
         mSaveVideoRoot = null;
     }
 
-    public void setUsePreBuffer(boolean usePreBuffer) {
-        mUsePreBuffer = usePreBuffer;
-    }
 
     public void setVideoUrl(String videoPath) {
         Log.d(TAG, "video setVideoUrl: ");
         if (mMediaPlayerManager == null) {
             initMediaPlayer();
         }
-        mMediaPlayerManager.setVideoPath(videoPath);
+        mMediaPlayerManager.setVideoUrl(videoPath);
         showLoading();
     }
 
@@ -800,6 +786,22 @@ public abstract class BaseVideoPlayer extends FrameLayout implements
             mPreviewImage = new ImageView(mContext);
             mPreviewImage.setImageDrawable(drawable);
             mPreviewImage.setScaleType(ImageView.ScaleType.CENTER_CROP);
+            FrameLayout.LayoutParams layoutParams = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
+            //添加到loading底下
+            mVideoContainer.addView(mPreviewImage, 2, layoutParams);
+        }
+        return this;
+    }
+
+    /**
+     * 设置ImageView
+     * @param imageView
+     */
+    public BaseVideoPlayer setPreviewImage(ImageView imageView) {
+        if (imageView != null) {
+            mPreviewImage = new ImageView(mContext);
+            mPreviewImage.setImageDrawable(imageView.getDrawable());
+            mPreviewImage.setScaleType(imageView.getScaleType());
             FrameLayout.LayoutParams layoutParams = new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT);
             //添加到loading底下
             mVideoContainer.addView(mPreviewImage, 2, layoutParams);
@@ -893,7 +895,7 @@ public abstract class BaseVideoPlayer extends FrameLayout implements
     }
 
     private boolean isInPlaybackState() {
-        return (mCurrentState != STATE_ERROR &&
+        return (mMediaPlayerManager != null && mCurrentState != STATE_ERROR &&
                 mCurrentState != STATE_IDLE &&
                 mCurrentState != STATE_PREPARING);
     }
@@ -938,12 +940,16 @@ public abstract class BaseVideoPlayer extends FrameLayout implements
 
     @Override
     public void onStartTrackingTouch(SeekBar seekBar) {
-        mMediaPlayerManager.pause();
+        if (mMediaPlayerManager != null) {
+            mMediaPlayerManager.pause();
+        }
     }
 
     @Override
     public void onStopTrackingTouch(SeekBar seekBar) {
-        mMediaPlayerManager.start();
+        if (mMediaPlayerManager != null) {
+            mMediaPlayerManager.start();
+        }
     }
 
     @Override
@@ -1092,5 +1098,72 @@ public abstract class BaseVideoPlayer extends FrameLayout implements
 //            return true;
 //        }
 //    }
+
+    static class Builder {
+        private MediaPlayerType mMediaPlayerType;
+        private DisplayType displayType;
+        private VideoViewType videoViewType;
+
+        private @LayoutRes int miniId, fullId, floatId;
+
+        public Builder setMiniLayoutId(@LayoutRes int id) {
+            miniId = id;
+            return this;
+        }
+
+        public int getMiniId() {
+            return miniId;
+        }
+
+        public Builder setFullLayoutId(@LayoutRes int id) {
+            fullId = id;
+            return this;
+        }
+
+        public int getFullId() {
+            return fullId;
+        }
+
+        public Builder setFloatLayoutId(@LayoutRes int id) {
+            floatId = id;
+            return this;
+        }
+
+        public int getFloatId() {
+            return floatId;
+        }
+
+        public Builder setMediaType(MediaPlayerType playerType) {
+            this.mMediaPlayerType = playerType;
+            return this;
+        }
+
+        public MediaPlayerType getMediaPlayerType() {
+            return mMediaPlayerType;
+        }
+
+        public DisplayType getDisplayType() {
+            return displayType;
+        }
+
+        public Builder setDisplayType(DisplayType displayType) {
+            this.displayType = displayType;
+            return this;
+        }
+
+        public VideoViewType getVideoViewType() {
+            return videoViewType;
+        }
+
+        public Builder setVideoViewType(VideoViewType videoViewType) {
+            this.videoViewType = videoViewType;
+            return this;
+        }
+
+        public BaseVideoPlayer create(Context context) {
+            return new BaseVideoPlayer(context,this);
+        }
+
+    }
 
 }

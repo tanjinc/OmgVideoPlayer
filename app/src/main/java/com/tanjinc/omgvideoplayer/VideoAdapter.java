@@ -50,7 +50,7 @@ public class VideoAdapter extends RecyclerView.Adapter<VideoAdapter.ViewHolder> 
     @Override
     public void onBindViewHolder(ViewHolder holder, final int position) {
         if (mDatas != null && position < mDatas.size()) {
-            ImageUtils.loadImage(mDatas.get(position).getThumbPath(), holder.thumb);
+            ImageUtils.loadImage(mDatas.get(position).getVideoUrl(), holder.thumb);
             holder.itemView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
@@ -79,7 +79,7 @@ public class VideoAdapter extends RecyclerView.Adapter<VideoAdapter.ViewHolder> 
 
         public ViewHolder(View view) {
             super(view);
-            root = (ViewGroup) view.findViewById(R.id.video_player_container);
+            root = (ViewGroup) view;
             thumb = (ImageView) view.findViewById(R.id.thumb_img);
             playBtn = view.findViewById(R.id.play_btn);
         }

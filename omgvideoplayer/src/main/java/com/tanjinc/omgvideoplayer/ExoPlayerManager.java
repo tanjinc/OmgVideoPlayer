@@ -45,7 +45,7 @@ public class ExoPlayerManager implements TextureView.SurfaceTextureListener,
     private ResizeTextureView mTextureView;
     private SurfaceTexture mSurfaceTexture;
 
-    private String mPath;
+    private String mVideoUrl;
     private String mUserAgent;
 
     private SurfaceView mSurfaceView;
@@ -83,7 +83,7 @@ public class ExoPlayerManager implements TextureView.SurfaceTextureListener,
     }
 
     private void openVideo() {
-        if (mPath == null ) {
+        if (mVideoUrl == null ) {
             Log.d(TAG, "video openVideo not ready");
             return;
         }
@@ -98,7 +98,7 @@ public class ExoPlayerManager implements TextureView.SurfaceTextureListener,
         DefaultBandwidthMeter bandwidthMeter = new DefaultBandwidthMeter();
         DataSource.Factory dataSourceFactory = new DefaultDataSourceFactory(mContext, mUserAgent);
         ExtractorsFactory extractorsFactory = new DefaultExtractorsFactory();
-        MediaSource videoSource = new ExtractorMediaSource(Uri.parse(mPath), dataSourceFactory, extractorsFactory, null, null);
+        MediaSource videoSource = new ExtractorMediaSource(Uri.parse(mVideoUrl), dataSourceFactory, extractorsFactory, null, null);
         TrackSelection.Factory videoTrackSelectionFactory =new AdaptiveVideoTrackSelection.Factory(bandwidthMeter);
         TrackSelector trackSelector = new DefaultTrackSelector(videoTrackSelectionFactory);
         LoadControl loadControl = new DefaultLoadControl();
@@ -116,8 +116,8 @@ public class ExoPlayerManager implements TextureView.SurfaceTextureListener,
     }
 
     @Override
-    public void setVideoPath(String path) {
-        mPath = path;
+    public void setVideoUrl(String url) {
+        mVideoUrl = url;
         openVideo();
     }
 
@@ -169,10 +169,10 @@ public class ExoPlayerManager implements TextureView.SurfaceTextureListener,
             ((RelativeLayout.LayoutParams)layoutParams).addRule(RelativeLayout.CENTER_IN_PARENT);
         }
         if (mTextureView != null) {
-            if ( mTextureView.getParent() == null) {
-                //((ViewGroup) mTextureView.getParent()).removeView(mTextureView);
-                parent.addView(mTextureView, 0, layoutParams);
+            if ( mTextureView.getParent() != null) {
+                ((ViewGroup) mTextureView.getParent()).removeView(mTextureView);
             }
+            parent.addView(mTextureView, 0, layoutParams);
         }
         if (mSurfaceView != null ) {
             if(mSurfaceView.getParent() != null) {
@@ -201,7 +201,9 @@ public class ExoPlayerManager implements TextureView.SurfaceTextureListener,
             mSurfaceTexture = surfaceTexture;
             openVideo();
         } else {
-            mTextureView.setSurfaceTexture(mSurfaceTexture);
+            if (mTextureView != null) {
+                mTextureView.setSurfaceTexture(mSurfaceTexture);
+            }
         }
     }
 
@@ -308,6 +310,7 @@ public class ExoPlayerManager implements TextureView.SurfaceTextureListener,
     boolean prepared;
     @Override
     public void onPlayerStateChanged(boolean playWhenReady, int playbackState) {
+        Log.d(TAG, "video onPlayerStateChanged() called with: " + "playWhenReady = [" + playWhenReady + "], playbackState = [" + playbackState + "]");
         switch (playbackState) {
             case ExoPlayer.STATE_READY:
                 if (mOnPreparedListener != null && !prepared) {

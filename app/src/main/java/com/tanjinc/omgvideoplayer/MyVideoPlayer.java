@@ -13,9 +13,7 @@ public class MyVideoPlayer extends BaseVideoPlayer {
     private static final String TAG = "MyVideoPlayer";
 
     public MyVideoPlayer(Context context) {
-        super(context);
-        setMiniLayoutId(R.layout.om_video_mini_layout);          //设置小窗布局
-        setFullLayoutId(R.layout.om_video_fullscreen_layout);   //设置全局布局
+        super(context, new Builder());
     }
 
     @Override

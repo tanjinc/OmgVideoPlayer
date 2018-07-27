@@ -4,11 +4,4 @@
                 android:id="@+id/full_container"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent">
-    <!--<com.tanjinc.omgvideoplayer.OmgVideoView-->
-        <!--android:id="@+id/video"-->
-        <!--android:layout_width="match_parent"-->
-        <!--android:layout_height="300dp"-->
-        <!--app:mini_layout="@layout/om_video_mini_layout"-->
-        <!--app:full_layout="@layout/om_video_fullscreen_layout"-->
-        <!--/>-->
 </FrameLayout>

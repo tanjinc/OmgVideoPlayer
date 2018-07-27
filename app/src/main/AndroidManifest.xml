@@ -29,9 +29,6 @@
 
         <service android:name="com.tanjinc.omgvideoplayer.FloatWindowService"/>
 
-        <activity android:name="com.tanjinc.omgvideoplayer.OmgTestActivity">
-
-        </activity>
     </application>
 
 </manifest>
