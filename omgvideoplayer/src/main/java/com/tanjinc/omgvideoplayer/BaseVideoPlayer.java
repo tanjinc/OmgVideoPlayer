@@ -722,6 +722,9 @@ public class BaseVideoPlayer extends FrameLayout implements
         intent.putExtra(FloatWindowOption.NAME, option);
         mContext.bindService(intent, mServiceConnection, Context.BIND_AUTO_CREATE);
         isFloat = true;
+        if (mOnFloatListener != null) {
+            mOnFloatListener.startFloat();
+        }
     }
 
     public void exitFloat() {
@@ -735,6 +738,9 @@ public class BaseVideoPlayer extends FrameLayout implements
             mFloatService.stop();
         }
         isFloat = false;
+        if (mOnFloatListener != null) {
+            mOnFloatListener.exitFloat();
+        }
     }
 
     public void onPause() {
@@ -1177,6 +1183,15 @@ public class BaseVideoPlayer extends FrameLayout implements
             return new BaseVideoPlayer(context,this);
         }
 
+    }
+
+    private OnFloatListener mOnFloatListener;
+    public void setOnFloatListener(OnFloatListener floatListener) {
+        mOnFloatListener = floatListener;
+    }
+    public interface OnFloatListener {
+        void startFloat();
+        void exitFloat();
     }
 
 }

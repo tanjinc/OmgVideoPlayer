@@ -111,7 +111,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         mCurrentPosition = position;
-        ViewHolder currentVH = (ViewHolder) mRecyclerView.findViewHolderForLayoutPosition(position);
+        final ViewHolder currentVH = (ViewHolder) mRecyclerView.findViewHolderForLayoutPosition(position);
         final VideoItem item = mItemArrayList.get(position);
         BaseVideoPlayer.MediaPlayerType mediaPlayerType = BaseVideoPlayer.MediaPlayerType.EXO_PLAYER;
         if (position == 0)
@@ -125,6 +125,19 @@ public class MainActivity extends AppCompatActivity {
         mVideoPlayer.setVideoUrl(item.getVideoUrl());
         mVideoPlayer.setTitle(item.getVideoTitle());
         mVideoPlayer.start();
+        mVideoPlayer.setOnFloatListener(new BaseVideoPlayer.OnFloatListener() {
+            @Override
+            public void startFloat() {
+                currentVH.mPreViewImg.setVisibility(View.VISIBLE);
+            }
+
+            @Override
+            public void exitFloat() {
+                currentVH.setActive(false);
+                mCurrentPosition = -1;
+                mVideoPlayer = null;
+            }
+        });
         currentVH.setActive(true);
     }
 
