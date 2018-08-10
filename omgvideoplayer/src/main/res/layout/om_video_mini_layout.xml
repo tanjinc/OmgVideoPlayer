@@ -17,6 +17,19 @@
     </RelativeLayout>
 
     <RelativeLayout
+        android:id="@+id/right_layout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="end|center_vertical">
+        <ImageView
+            android:id="@+id/switch_float_btn"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerInParent="true"
+            android:src="@drawable/om_video_player_ic_float"/>
+    </RelativeLayout>
+
+    <RelativeLayout
         android:id="@+id/bottom_layout"
         android:layout_width="match_parent"
         android:layout_height="40dp"

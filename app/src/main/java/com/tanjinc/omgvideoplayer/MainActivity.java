@@ -3,6 +3,7 @@ package com.tanjinc.omgvideoplayer;
 import android.app.Activity;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -23,7 +24,7 @@ import com.tanjinc.playermanager.R;
  * Created by tanjinc on 17-4-5.
  */
 
-public class MainActivity extends Activity {
+public class MainActivity extends AppCompatActivity {
     private static final String TAG = "TestActivity";
 
 
@@ -120,7 +121,7 @@ public class MainActivity extends Activity {
 
         mVideoPlayer = new SampleVideoPlayer(this, mediaPlayerType);
         mVideoPlayer.setRootView(currentVH.mVideoRoot);
-        mVideoPlayer.setPreviewImage(currentVH.mPreViewImg.getDrawable());
+        mVideoPlayer.setPreviewImage(currentVH.mPreViewImg);
         mVideoPlayer.setVideoUrl(item.getVideoUrl());
         mVideoPlayer.setTitle(item.getVideoTitle());
         mVideoPlayer.start();
@@ -150,11 +151,7 @@ public class MainActivity extends Activity {
             });
             if (position == 0) {
                 holder.mMediaType.setText("EXOPlayer");
-            }
-            if (position == 1) {
-                holder.mMediaType.setText("NMDPlayer");
-            }
-            if (position == 2) {
+            } else {
                 holder.mMediaType.setText("MediaPlayer");
             }
         }

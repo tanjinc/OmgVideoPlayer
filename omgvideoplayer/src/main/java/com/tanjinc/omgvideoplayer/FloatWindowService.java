@@ -1,13 +1,8 @@
 package com.tanjinc.omgvideoplayer;
 
-import android.animation.Animator;
-import android.animation.AnimatorInflater;
 import android.animation.ValueAnimator;
 import android.app.Service;
-import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.graphics.Color;
 import android.os.Binder;
 import android.os.Build;
@@ -19,11 +14,7 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
 import android.widget.FrameLayout;
-import android.widget.RelativeLayout;
-import android.widget.Toast;
 
 /**
  * Created by tanjincheng on 18/3/18.
@@ -40,16 +31,12 @@ public class FloatWindowService extends Service {
     private FrameLayout.LayoutParams mRootLayoutParams;
 
 
-    private int targetX, targetY, rawX, rawY;
 
     private BaseVideoPlayer mBaseVideoPlayer;
     private MyBinder binder = new MyBinder();
 
     public boolean hasAnima = true;
     public int mAniationDuration = 500;
-
-    private int mWindowHeight;
-    private int mWindowWidth;
 
     @Override
     public void onCreate() {
@@ -62,6 +49,9 @@ public class FloatWindowService extends Service {
     @Override
     public IBinder onBind(Intent intent) {
         Log.d(TAG, "video onBind: ");
+
+        FloatWindowOption option = (FloatWindowOption) intent.getSerializableExtra(FloatWindowOption.NAME);
+
         mRootView = new FrameLayout(getApplication());
         mRootView.setBackgroundColor(intent.getIntExtra("background", Color.BLACK));
 
@@ -69,19 +59,16 @@ public class FloatWindowService extends Service {
 
         int[] preLocation = new int[2];
         mBaseVideoPlayer.getLocationInWindow(preLocation);
-        mWindowWidth = mBaseVideoPlayer.getMeasuredWidth();
-        mWindowHeight = mBaseVideoPlayer.getMeasuredHeight();
 
         ((ViewGroup)mBaseVideoPlayer.getParent()).removeView(mBaseVideoPlayer);
         mBaseVideoPlayer.setContext(this);
         mBaseVideoPlayer.setRootView(mRootView);
-        mBaseVideoPlayer.setContentView(intent.getIntExtra("float_layout_id", 0));
+        mBaseVideoPlayer.setContentView(option.getLayoutId());
         mRootView.setOnTouchListener(new FloatTouchListener());
 
         mRootLayoutParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
         mWindowManagerLp = new WindowManager.LayoutParams();
-        mWindowManagerLp.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL | WindowManager.LayoutParams
-                .FLAG_NOT_FOCUSABLE;
+        mWindowManagerLp.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
         mWindowManagerLp.type = WindowManager.LayoutParams.TYPE_TOAST;
         if (Build.VERSION.SDK_INT >= 19) {
             mWindowManagerLp.type = WindowManager.LayoutParams.TYPE_TOAST;
@@ -91,15 +78,15 @@ public class FloatWindowService extends Service {
         mWindowManagerLp.gravity = Gravity.TOP | Gravity.START;
         mWindowManagerLp.token = mRootView.getWindowToken();
 
-        mWindowManagerLp.width = intent.getIntExtra("width", mWindowWidth);
-        mWindowManagerLp.height = intent.getIntExtra("height", mWindowHeight);
+        mWindowManagerLp.width = option.getWidth();
+        mWindowManagerLp.height = option.getHeight();
 
-
-
+        final int targetX = option.getTargetX();
+        final int targetY = option.getTargetY();
+        final int rawX;
+        final int rawY;
         if (hasAnima) {
             mWindowManager.addView(mRootView, mWindowManagerLp);
-            targetX = intent.getIntExtra("x", 0);
-            targetY = intent.getIntExtra("y", 0);
             rawX = preLocation[0];
             rawY = preLocation[1];
             ValueAnimator valueAnimator = ValueAnimator.ofInt(rawY);
@@ -111,14 +98,14 @@ public class FloatWindowService extends Service {
                     int updateValue = (int) animation.getAnimatedValue();
                     mWindowManagerLp.y = updateValue;
                     mWindowManagerLp.x = updateValue * rawX  / (rawY - targetY);
-                    Log.d(TAG, "video onAnimationUpdate: ｙ＝" + updateValue + " x =" + mWindowManagerLp.x);
+                    Log.d(TAG, "video onAnimationUpdate: ｙ＝" + updateValue + " targetX =" + mWindowManagerLp.x);
                     mWindowManager.updateViewLayout(mRootView, mWindowManagerLp);
                 }
             });
             valueAnimator.start();
         } else {
-            mWindowManagerLp.x = intent.getIntExtra("x", 0);
-            mWindowManagerLp.y = intent.getIntExtra("y", 0);
+            mWindowManagerLp.x = targetX;
+            mWindowManagerLp.y = targetY;
             mWindowManager.addView(mRootView, mWindowManagerLp);
         }
 
@@ -143,7 +130,9 @@ public class FloatWindowService extends Service {
 
     public void stop() {
         Log.d(TAG, "video stop: ");
-        mWindowManager.removeView(mRootView);
+        if (mWindowManager != null) {
+            mWindowManager.removeView(mRootView);
+        }
         mBaseVideoPlayer = null;
         stopSelf();
     }

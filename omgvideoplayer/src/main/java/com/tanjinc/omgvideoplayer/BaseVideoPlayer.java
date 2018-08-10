@@ -14,9 +14,12 @@ import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
 import android.net.ConnectivityManager;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
+import android.provider.Settings;
 import android.support.annotation.CallSuper;
 import android.support.annotation.LayoutRes;
 import android.util.Log;
@@ -116,6 +119,7 @@ public class BaseVideoPlayer extends FrameLayout implements
     protected View mStartBtn;
     protected View mSwitchBtn;
     protected View mCloseBtn;
+    protected View mSwitchFloatBtn;
     protected TextView mTitleTv;
     protected TextView mCurrentPositionTv;
     protected TextView mDurationTv;
@@ -300,13 +304,8 @@ public class BaseVideoPlayer extends FrameLayout implements
         if (getParent() != null) {
             ((ViewGroup) getParent()).removeView(this);
         }
-//        if (videoPlayerRoot.getWidth() == 0 || videoPlayerRoot.getHeight() == 0) {
-//            mVideoPlayerRoot.addView(this, -1, new ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
-//        } else {
-//            mVideoPlayerRoot.addView(this, 0,new ViewGroup.LayoutParams(videoPlayerRoot.getWidth(), videoPlayerRoot.getHeight()));
-//        }
         if (mVideoPlayerRoot instanceof FrameLayout) {
-            (mVideoPlayerRoot).addView(this);
+            (mVideoPlayerRoot).addView(this, 0);
         }
 
         if (isFull && mFullLayoutId != 0) {
@@ -367,9 +366,7 @@ public class BaseVideoPlayer extends FrameLayout implements
     }
 
     public void setContext(Context context) {
-        if (mHaveRegister && mSaveContext != null) {
-            mSaveContext.unregisterReceiver(mNetworkReceiver);
-        }
+        unRegisterReceiver();
         mSaveContext = mContext;
         mContext = context;
     }
@@ -386,11 +383,18 @@ public class BaseVideoPlayer extends FrameLayout implements
         mStartBtn = findViewById(R.id.start_btn);
         if (mStartBtn != null) {
             mStartBtn.setOnClickListener(this);
+            mStartBtn.setActivated(isPlaying());
         }
         mSwitchBtn = findViewById(R.id.switch_full_btn);
         if (mSwitchBtn != null) {
             mSwitchBtn.setOnClickListener(this);
         }
+
+        mSwitchFloatBtn = findViewById(R.id.switch_float_btn);
+        if (mSwitchFloatBtn != null) {
+            mSwitchFloatBtn.setOnClickListener(this);
+        }
+
         mTitleTv = (TextView) findViewById(R.id.video_title);
         if (mTitleTv != null && mVideoTitle != null) {
             mTitleTv.setText(mVideoTitle);
@@ -512,9 +516,15 @@ public class BaseVideoPlayer extends FrameLayout implements
 
         } else if (id == R.id.switch_full_btn) {
             switchToFull();
-
         } else if (id == R.id.video_close_btn){
             onDestroy();
+        } else if (id == R.id.switch_float_btn) {
+            //悬浮窗
+            startFloat(new FloatWindowOption()
+                    .setWidth(600)
+                    .setHeight(400)
+                    .setTargetX(500)
+                    .setTargetY(600));
         }
     }
 
@@ -683,27 +693,33 @@ public class BaseVideoPlayer extends FrameLayout implements
             mFloatService = null;
         }
     };
-    public void startFloat(int x, int y) {
+
+    public void startFloat(FloatWindowOption option) {
         Activity activity = Utils.scanForActivity(mContext);
         if (activity == null) {
             return;
         }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (!Settings.canDrawOverlays(mContext)) {
+                activity.startActivityForResult(
+                        new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + activity.getPackageName())), 0);
+            }
+        }
 
         setStaticPlayer(this);
         mSaveVideoRoot = mVideoPlayerRoot;
-        int[] location = new int[2];
-        getLocationOnScreen(location);
 
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-//            if (!Settings.canDrawOverlays(mContext)) {
-//                activity.startActivityForResult(
-//                        new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + activity.getPackageName())), 0);
-//            }
-//        }
         Intent intent = new Intent(mContext, FloatWindowService.class);
-        intent.putExtra("float_layout_id", mFloatLayoutId);
-        intent.putExtra("x", x);
-        intent.putExtra("y", y);
+        if (option.getLayoutId() == 0) {
+            option.setFloatLayoutId(mFloatLayoutId);
+        }
+        if (option.getHeight() == 0); {
+            option.setHeight(getMeasuredHeight());
+        }
+        if (option.getWidth() == 0) {
+            option.setWidth(getMeasuredWidth());
+        }
+        intent.putExtra(FloatWindowOption.NAME, option);
         mContext.bindService(intent, mServiceConnection, Context.BIND_AUTO_CREATE);
         isFloat = true;
     }
@@ -721,22 +737,14 @@ public class BaseVideoPlayer extends FrameLayout implements
         isFloat = false;
     }
 
-    public boolean isFull() {
-        return isFull;
-    }
-
-    public boolean isFloat() {
-        return isFloat;
-    }
-
     public void onPause() {
-        if (isPlaying()) {
+        if (isPlaying() && !isFloat) {
             pause();
         }
     }
 
     public void onResume() {
-        if (isInPlaybackState()) {
+        if (isInPlaybackState() && !isFloat) {
             start();
         }
     }
@@ -749,7 +757,7 @@ public class BaseVideoPlayer extends FrameLayout implements
         mHandler.removeMessages(MSG_PROCESS);
         mHandler.removeCallbacks(mProgressRunnable);
         if (isFloat && mFloatService != null) {
-            mFloatService.stop();
+            exitFloat();
         }
 
         if (mWidgetArrayList != null) {
@@ -757,8 +765,13 @@ public class BaseVideoPlayer extends FrameLayout implements
                 widget.release();
             }
         }
+        if (getParent() != null) {
+            ((ViewGroup) getParent()).removeView(this);
+        }
         unRegisterReceiver();
-        mMediaPlayerManager.release();
+        if (mMediaPlayerManager != null) {
+            mMediaPlayerManager.release();
+        }
         mMediaPlayerManager = null;
         releaseStaticPlayer();
         setScreenOn(false);
