@@ -1,11 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
               android:orientation="vertical"
+              android:gravity="center_horizontal"
+              android:padding="10dp"
               android:layout_width="match_parent"
               android:layout_height="match_parent">
-    <android.support.v7.widget.RecyclerView
-        android:id="@+id/list_view"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
+    <Button
+        android:id="@+id/test_video_list_btn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="视频列表播放"/>
 
+    <Button
+        android:id="@+id/test_video_detail_btn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="视频详情页播放"/>
+
+    <Button
+        android:id="@+id/test_video_float_btn"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="悬浮窗播放"/>
 </LinearLayout>
