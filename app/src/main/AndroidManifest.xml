@@ -31,7 +31,8 @@
 
         <service android:name="com.tanjinc.omgvideoplayer.FloatWindowService"/>
 
-        <activity android:name="com.tanjinc.omgvideoplayer.listPage.ListVideoActivity">
+        <activity android:name="com.tanjinc.omgvideoplayer.listPage.ListVideoActivity"
+            android:screenOrientation="portrait">
         </activity>
         <activity android:name="com.tanjinc.omgvideoplayer.detailPage.DetailActivity">
         </activity>
