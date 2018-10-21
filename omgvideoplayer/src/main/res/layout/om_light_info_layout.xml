@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+              android:layout_width="@dimen/om_video_player_centerinfo_width"
+              android:layout_height="@dimen/om_video_player_centerinfo_height"
+              android:layout_marginTop="@dimen/om_video_player_centerinfo_margin_top"
+              android:layout_centerHorizontal="true"
+              android:layout_gravity="center_horizontal"
+              android:background="@drawable/om_video_centerinfo_bg"
+              android:visibility="visible">
+
+    <ImageView
+        android:id="@+id/light_img"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:layout_marginStart="@dimen/om_video_volume_light_img_margin_left"
+        android:background="@null" />
+
+    <TextView
+        android:id="@+id/light_percentage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:gravity="center"
+        android:layout_marginStart="7dp"
+        android:fontFamily="sans-serif-medium"
+        android:shadowColor="@color/om_video_text_shadow_color"
+        android:shadowDx="0"
+        android:shadowDy="0.5"
+        android:shadowRadius="2.5"
+        android:textColor="#ccffff"
+        android:textSize="16sp"/>
+
+    <SeekBar
+        android:id="@+id/light_progressbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:layout_marginEnd="5dp"
+        android:splitTrack="false"
+        android:maxHeight="@dimen/om_video_float_seekbar_maxheight"
+        android:minHeight="@dimen/om_video_float_seekbar_minheight"
+        android:progressDrawable="@drawable/om_video_player_progress"
+        android:thumb="@null"
+        android:thumbOffset="0dp" />
+</LinearLayout>

@@ -1,6 +1,6 @@
 package com.tanjinc.omgvideoplayer.listPage.bean;
 
-public class VideoBean {
+public class VideoBean extends BaseItem {
     String preImageUrl;
     String videoUrl;
     String videoTitle;
@@ -28,4 +28,10 @@ public class VideoBean {
     public void setVideoTitle(String videoTitle) {
         this.videoTitle = videoTitle;
     }
+
+    @Override
+    public int getType() {
+        return TYPE_A;
+    }
+
 }

@@ -47,7 +47,7 @@ public abstract class BaseWidget {
         return null;
     }
 
-    public Context getContent() {
+    public Context getContext() {
         if (mWidgetRoot != null) {
             return mWidgetRoot.getContext();
         }

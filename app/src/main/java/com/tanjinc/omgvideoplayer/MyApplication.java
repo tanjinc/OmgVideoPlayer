@@ -10,10 +10,18 @@ import com.squareup.leakcanary.LeakCanary;
  */
 public class MyApplication extends Application {
 
+    private static MyApplication sMyApplication;
+
+    public static MyApplication getInstance() {
+        return sMyApplication;
+    }
+
     public void onCreate() {
         LeakCanary.install(this);
         super.onCreate();
 
+        sMyApplication = this;
         Stetho.initializeWithDefaults(this);
+
     }
 }

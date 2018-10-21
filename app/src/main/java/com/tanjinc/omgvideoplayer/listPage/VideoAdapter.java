@@ -11,26 +11,31 @@ import java.util.List;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.tanjinc.omgvideoplayer.listPage.bean.BaseItem;
 import com.tanjinc.omgvideoplayer.utils.ImageUtils;
 import com.tanjinc.playermanager.R;
 import com.tanjinc.omgvideoplayer.listPage.bean.VideoBean;
 
+import static com.tanjinc.omgvideoplayer.listPage.bean.BaseItem.TYPE_A;
+import static com.tanjinc.omgvideoplayer.listPage.bean.BaseItem.TYPE_B;
+import static com.tanjinc.omgvideoplayer.listPage.bean.BaseItem.TYPE_C;
+import static com.tanjinc.omgvideoplayer.listPage.bean.BaseItem.TYPE_VIDEO;
+
 public class VideoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
-    private final static int ITEM_TYPE_LOADING = 1000;
-    private List<VideoBean> mDataArray = new ArrayList<>();
+    private List<BaseItem> mDataArray = new ArrayList<>();
 
     private OnItemClickListener mOnItemClickListener;
 
     public VideoAdapter() {
     }
 
-    public void setData(List<VideoBean> items) {
+    public void setData(List<BaseItem> items) {
         mDataArray = items;
         notifyDataSetChanged();
     }
 
-    public void addFootItems(List<VideoBean> items) {
+    public void addFootItems(List<BaseItem> items) {
         mDataArray.addAll(items);
         notifyDataSetChanged();
     }
@@ -43,33 +48,71 @@ public class VideoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
 
     @Override
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        if (viewType == ITEM_TYPE_LOADING) {
-            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.video_list_item_loading, parent, false);
-            return new LoadMoreViewHolder(view);
-        } else {
-            View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.video_list_item, parent, false);
-            return new ViewHolder(view);
+        switch (viewType) {
+            case TYPE_A:
+                break;
+            case TYPE_B:
+                break;
+            case TYPE_C:
+                break;
+            case TYPE_VIDEO:
+                View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.video_list_item, parent, false);
+                return new VideoViewHolder(view);
+                default:
         }
+
+        View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.video_list_item, parent, false);
+        return new VideoViewHolder(view);
+
     }
 
     @Override
     public void onBindViewHolder(final RecyclerView.ViewHolder viewHolder, final int position) {
-        if (getItemViewType(position) == ITEM_TYPE_LOADING) {
-            LoadMoreViewHolder loadMoreViewHolder = (LoadMoreViewHolder) viewHolder;
-            loadMoreViewHolder.loadMoreView.setVisibility(View.VISIBLE);
-        } else {
-            ViewHolder vh = (ViewHolder) viewHolder;
-            final VideoBean item = mDataArray.get(position);
-            ImageUtils.loadImage(item.getPreImageUrl(), vh.mPreViewImg);
-            vh.mPreViewImg.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    if (mOnItemClickListener != null) {
-                        mOnItemClickListener.OnItemClick(position);
-                    }
-                }
-            });
+        switch (getItemViewType(position)) {
+            case TYPE_A:
+                bindTypeA(viewHolder, position);
+                break;
+            case TYPE_B:
+                bindTypeB(viewHolder, position);
+                break;
+            case TYPE_C:
+                bindTypeC(viewHolder, position);
+                break;
+            case TYPE_VIDEO:
+                bindTypeVideo(viewHolder, position);
+                break;
         }
+    }
+
+    private void bindTypeA(RecyclerView.ViewHolder viewHolder, int position) {
+
+    }
+
+    private void bindTypeB(RecyclerView.ViewHolder viewHolder, int position) {
+
+    }
+
+    private void bindTypeC(RecyclerView.ViewHolder viewHolder, int position) {
+
+    }
+
+    private void bindTypeVideo(RecyclerView.ViewHolder viewHolder, final int position) {
+        if (viewHolder == null || !(viewHolder instanceof VideoViewHolder)) {
+            return;
+        }
+        VideoViewHolder vh = (VideoViewHolder) viewHolder;
+
+        final VideoBean item = (VideoBean) mDataArray.get(position);
+
+        ImageUtils.loadImage(item.getPreImageUrl(), vh.mPreViewImg);
+        vh.mPreViewImg.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (mOnItemClickListener != null) {
+                    mOnItemClickListener.OnItemClick(position);
+                }
+            }
+        });
     }
 
     @Override
@@ -78,14 +121,14 @@ public class VideoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
     }
 
 
-    public VideoBean getItem(int position) {
+    public BaseItem getItem(int position) {
         return mDataArray.get(position);
     }
 
     @Override
     public int getItemViewType(int position) {
         if (position == getItemCount() - 1) {
-            return ITEM_TYPE_LOADING;
+            return 0;
         }
         return super.getItemViewType(position);
     }
@@ -98,36 +141,4 @@ public class VideoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         void OnItemClick(int position);
     }
 
-    public class ViewHolder extends RecyclerView.ViewHolder {
-
-        public ViewGroup mVideoRoot;
-        public ImageView mPreViewImg;
-        public ImageView mPlayBtn;
-
-        public ViewHolder(View itemView) {
-            super(itemView);
-            mVideoRoot = (ViewGroup) itemView.findViewById(R.id.test_video_root);
-            mPreViewImg = (ImageView) itemView.findViewById(R.id.test_preview_img);
-            mPlayBtn = (ImageView) itemView.findViewById(R.id.test_play_btn1);
-        }
-
-        public void setActive(boolean active) {
-            if (active) {
-                mPlayBtn.setVisibility(View.GONE);
-                mPreViewImg.setVisibility(View.GONE);
-            } else {
-                mPlayBtn.setVisibility(View.VISIBLE);
-                mPreViewImg.setVisibility(View.VISIBLE);
-            }
-        }
-    }
-
-    public class LoadMoreViewHolder extends RecyclerView.ViewHolder {
-        View loadMoreView;
-
-        public LoadMoreViewHolder(View itemView) {
-            super(itemView);
-            loadMoreView = itemView;
-        }
-    }
 }

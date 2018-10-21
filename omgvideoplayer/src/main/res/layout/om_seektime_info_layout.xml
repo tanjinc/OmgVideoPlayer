@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                android:id="@+id/player_seektime_info_id"
+                android:layout_width="@dimen/om_video_player_seektime_info_width"
+                android:layout_height="@dimen/om_video_player_seektime_info_height"
+                android:layout_marginTop="@dimen/om_video_player_seektime_info_margin_top"
+                android:layout_gravity="center_horizontal"
+                android:background="@drawable/om_seektime_info_ly_bg"
+                android:visibility="gone">
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginTop="@dimen/om_video_player_seektime_tv_margin_top"
+        android:orientation="horizontal">
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/current_time_tv"
+            android:fontFamily="sans-serif-medium"
+            android:textSize="@dimen/om_video_player_seektime_info_current_tv_size"
+            android:textColor="@color/om_video_player_seektime_info_current_tv_color"
+            android:includeFontPadding="false"/>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/change_time_tv"
+            android:layout_gravity="center_vertical"
+            android:layout_marginStart="@dimen/om_video_player_seektime_info_change_tv_margin_left"
+            android:textSize="@dimen/om_video_player_seektime_info_change_tv_size"
+            android:textColor="@color/om_video_player_seektime_info_change_tv_color"
+            android:includeFontPadding="false"/>
+    </LinearLayout>
+
+    <SeekBar
+        android:id="@+id/seektime_info_seekbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:layout_marginEnd="5dp"
+        android:splitTrack="false"
+        android:maxHeight="@dimen/om_video_float_seekbar_maxheight"
+        android:minHeight="@dimen/om_video_float_seekbar_minheight"
+        android:progressDrawable="@drawable/om_video_player_progress"
+        android:thumb="@null"
+        android:thumbOffset="0dp" />
+</RelativeLayout>

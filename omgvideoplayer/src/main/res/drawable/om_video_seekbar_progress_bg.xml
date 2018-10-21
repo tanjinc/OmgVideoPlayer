@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <gradient android:startColor="@color/om_video_player_seekbar_color_start" android:endColor="@color/om_video_player_seekbar_color_end"/>
+    <size android:height="@dimen/video_player_seekbar_height"/>
+    <corners android:radius="1.33dp"/>
+</shape>

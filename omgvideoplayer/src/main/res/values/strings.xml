@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">OmgVideoPlayer</string>
+    <string name="om_volume_light_info">%1$d%%</string>
 </resources>

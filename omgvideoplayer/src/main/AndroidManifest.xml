@@ -9,7 +9,6 @@
 
 
     <activity android:name="com.tanjinc.omgvideoplayer.VideoWindowActivity"
-        android:theme="@style/Theme.AppCompat.NoActionBar"
         android:configChanges="orientation|keyboard|keyboardHidden|screenSize">
     </activity>
     <service android:name="com.tanjinc.omgvideoplayer.FloatWindowService">

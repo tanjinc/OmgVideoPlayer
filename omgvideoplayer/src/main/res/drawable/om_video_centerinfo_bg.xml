@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="@color/om_video_player_textinfo_bg_color"/>
+    <corners android:radius="@dimen/om_video_player_centerinfo_radius"/>
+</shape>

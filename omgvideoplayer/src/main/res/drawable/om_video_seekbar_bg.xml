@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <solid android:color="@color/seek_bar_bg_color"/>
+    <size android:height="@dimen/video_player_seekbar_height"/>
+    <corners android:radius="1.33dp"/>
+</shape>

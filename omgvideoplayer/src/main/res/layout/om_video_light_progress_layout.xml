@@ -20,5 +20,16 @@
         android:textColor="#FFF"
         android:text= "89%"
         />
-
+    <SeekBar
+        android:id="@+id/light_progressbar"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_vertical"
+        android:layout_marginEnd="5dp"
+        android:splitTrack="false"
+        android:maxHeight="@dimen/om_video_float_seekbar_maxheight"
+        android:minHeight="@dimen/om_video_float_seekbar_minheight"
+        android:progressDrawable="@drawable/om_video_player_progress"
+        android:thumb="@null"
+        android:thumbOffset="0dp" />
 </LinearLayout>

@@ -86,6 +86,6 @@
                 android:textColor="#ffffff"
                 android:text="00:00"/>
         </LinearLayout>
-
     </RelativeLayout>
+    <include layout="@layout/bottom_process_bar" android:layout_gravity="bottom"/>
 </FrameLayout>

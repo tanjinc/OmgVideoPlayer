@@ -12,10 +12,12 @@ import android.view.ViewGroup;
 
 import com.tanjinc.omgvideoplayer.BaseVideoPlayer;
 import com.tanjinc.omgvideoplayer.SampleVideoPlayer;
-import com.tanjinc.playermanager.R;
+import com.tanjinc.omgvideoplayer.listPage.bean.BaseItem;
 import com.tanjinc.omgvideoplayer.listPage.bean.VideoBean;
+import com.tanjinc.playermanager.R;
 
 import java.util.List;
+
 
 public class VideoFragment extends Fragment implements VideoContract.View {
 
@@ -83,8 +85,11 @@ public class VideoFragment extends Fragment implements VideoContract.View {
         if (mPresenter != null) {
             mPresenter.loadVideo();
         }
+
+
         return view;
     }
+
 
     @Override
     public void onPause() {
@@ -111,7 +116,7 @@ public class VideoFragment extends Fragment implements VideoContract.View {
     }
 
     @Override
-    public void showVideoList(List<VideoBean> dataList, boolean isAppend) {
+    public void showVideoList(List<BaseItem> dataList, boolean isAppend) {
         if (isAppend) {
             mAdapter.addFootItems(dataList);
         } else {
@@ -130,7 +135,7 @@ public class VideoFragment extends Fragment implements VideoContract.View {
             return;
         } else {
             if (mCurrentPosition != -1 ) {
-                VideoAdapter.ViewHolder preViewHolder = (VideoAdapter.ViewHolder) mRecyclerView.findViewHolderForLayoutPosition(mCurrentPosition);
+                VideoViewHolder preViewHolder = (VideoViewHolder) mRecyclerView.findViewHolderForLayoutPosition(mCurrentPosition);
                 if (preViewHolder != null) {
                     preViewHolder.setActive(false);
                 }
@@ -142,8 +147,8 @@ public class VideoFragment extends Fragment implements VideoContract.View {
         }
 
         mCurrentPosition = position;
-        final VideoAdapter.ViewHolder currentVH = (VideoAdapter.ViewHolder) mRecyclerView.findViewHolderForLayoutPosition(position);
-        final VideoBean item = mAdapter.getItem(position);
+        final VideoViewHolder currentVH = (VideoViewHolder) mRecyclerView.findViewHolderForLayoutPosition(position);
+        final VideoBean item = (VideoBean) mAdapter.getItem(position);
         mVideoPlayer = new SampleVideoPlayer(getActivity(), BaseVideoPlayer.MediaPlayerType.EXO_PLAYER);
         mVideoPlayer.setRootView(currentVH.mVideoRoot);
         mVideoPlayer.setPreviewImage(currentVH.mPreViewImg);

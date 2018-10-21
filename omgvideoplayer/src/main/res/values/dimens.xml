@@ -4,4 +4,25 @@
     <dimen name="activity_vertical_margin">16dp</dimen>
     <dimen name="omg_float_window_width">300dp</dimen>
     <dimen name="omg_float_window_height">200dp</dimen>
+    <dimen name="video_player_seekbar_height">2dp</dimen>
+
+    <dimen name="om_video_player_centerinfo_height">36dp</dimen>
+    <dimen name="om_video_player_centerinfo_width">214dp</dimen>
+    <dimen name="om_video_player_centerinfo_margin_top">36dp</dimen>
+    <dimen name="om_video_player_centerinfo_radius">18dp</dimen>
+    <dimen name="om_video_volume_light_img_margin_left">13dp</dimen>
+    <dimen name="om_video_float_seekbar_maxheight">2dp</dimen>
+    <dimen name="om_video_float_seekbar_minheight">2dp</dimen>
+
+    <dimen name="om_video_player_seektime_info_radius">24dp</dimen>
+    <dimen name="om_video_player_seektime_info_width">194dp</dimen>
+    <dimen name="om_video_player_seektime_info_height">48dp</dimen>
+    <dimen name="om_video_player_seektime_info_current_tv_size">16sp</dimen>
+    <dimen name="om_video_player_seektime_info_change_tv_size">12sp</dimen>
+    <dimen name="om_video_player_seektime_info_change_tv_margin_left">7dp</dimen>
+    <dimen name="om_video_player_seektime_info_margin_top">56dp</dimen>
+    <dimen name="om_video_player_seektime_tv_margin_top">11dp</dimen>
+    <dimen name="om_video_player_seektime_seekbar_margin_bottom">10dp</dimen>
+    <dimen name="om_video_player_seektime_seekbar_width">165dp</dimen>
+
 </resources>

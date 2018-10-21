@@ -23,7 +23,7 @@ public class SampleVideoPlayer extends BaseVideoPlayer{
         );
 
         registerWidget(WidgetType.LOADING, R.layout.om_video_loading_view);
-        registerWidget(WidgetType.VOLUME, R.layout.om_video_volume_progress_layout);
+        registerWidget(WidgetType.VOLUME, R.layout.om_volume_info_layout);
     }
 
 }

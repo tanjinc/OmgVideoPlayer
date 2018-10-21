@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -31,16 +32,20 @@ import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import com.tanjinc.omgvideoplayer.utils.ScreenUtils;
 import com.tanjinc.omgvideoplayer.utils.Utils;
 import com.tanjinc.omgvideoplayer.widget.BaseWidget;
 import com.tanjinc.omgvideoplayer.widget.OmLightWidget;
 import com.tanjinc.omgvideoplayer.widget.OmLoadWidget;
 import com.tanjinc.omgvideoplayer.widget.OmNetworkWarnWidget;
+import com.tanjinc.omgvideoplayer.widget.OmSeekWidget;
 import com.tanjinc.omgvideoplayer.widget.OmVolumeWidget;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 
 
@@ -49,7 +54,6 @@ import java.util.ArrayList;
  */
 public class BaseVideoPlayer extends FrameLayout implements
         View.OnClickListener,
-        View.OnTouchListener,
         SeekBar.OnSeekBarChangeListener,
         IMediaPlayerControl.OnBufferingUpdateListener,
         IMediaPlayerControl.OnCompletionListener,
@@ -61,6 +65,7 @@ public class BaseVideoPlayer extends FrameLayout implements
     private static final String TAG = "BaseVideoPlayer";
     private static final int MSG_PROCESS = 100;
     private static final int MSG_LOADING_PROCESS = 101;
+    private static final int  MSG_HIDE_CONTROLLER = 102;
 
 
 
@@ -81,6 +86,7 @@ public class BaseVideoPlayer extends FrameLayout implements
     private OmLoadWidget mLoadWidget;
     private OmNetworkWarnWidget mNetworkWarnWidget;
     private OmLightWidget mLightWidget;
+    private OmSeekWidget mSeekWidget;
 
 
     /**
@@ -111,8 +117,7 @@ public class BaseVideoPlayer extends FrameLayout implements
     private VideoViewType mVideoViewType = VideoViewType.SCREEN_ADAPTATION;
     private DisplayType mDisplayType = DisplayType.TextureView;
     private MediaPlayerType mMediaPlayerType = MediaPlayerType.MEDIA_PLAYER;
-
-
+    private VideoGestureListener mGuestureListenr;
 
 
     //ui
@@ -127,6 +132,7 @@ public class BaseVideoPlayer extends FrameLayout implements
     protected FrameLayout mVideoContainer;
 
     protected View mTopLayout, mBottomLayout, mLeftLayout, mRightLayout;
+    protected ProgressBar mBottomProgressBar;
 
     private ImageView mPreviewImage;
 
@@ -145,6 +151,18 @@ public class BaseVideoPlayer extends FrameLayout implements
     private int mCurrentPosition;
     private int mDuration;
     private int mBufferPercent;
+    private int mScreenHeight;
+    private int mScreenWidth;
+    private int ONGESTURE_SEEK_TIME = 120 * 1000;
+    private boolean mIsSetSeek = false;
+    private boolean mIsSetVolumeLight = false;
+    private float mOldY = -1;
+    private float mOldX = -1;
+    private float mCurrentY = -1;
+    private float mCurrentX = -1;
+    private int mSeekBarPosition;
+
+
     private AudioManager mAudioManager;
 
 
@@ -156,6 +174,7 @@ public class BaseVideoPlayer extends FrameLayout implements
     private ResizeSurfaceView mSurfaceView;
     private Context mContext;
     private Context mSaveContext;
+    private Activity mActivity;
 
 
     private IMediaPlayerControl mMediaPlayerManager;
@@ -226,45 +245,66 @@ public class BaseVideoPlayer extends FrameLayout implements
         isFull = false;
     }
 
-    @SuppressLint("HandlerLeak")
-    private Handler mHandler = new Handler() {
+    private MyHandle mHandler = new MyHandle(this);
+
+    private static class MyHandle extends Handler {
+        private WeakReference<BaseVideoPlayer> mBaseVideoPlayerWeakReference;
+
+        public MyHandle(BaseVideoPlayer baseVideoPlayer) {
+            mBaseVideoPlayerWeakReference = new WeakReference<BaseVideoPlayer>(baseVideoPlayer);
+        }
+
+        public void destroy() {
+            removeCallbacks(null);
+            mBaseVideoPlayerWeakReference.clear();
+        }
         @Override
         public void handleMessage(Message msg) {
+            BaseVideoPlayer baseVideoPlayer = mBaseVideoPlayerWeakReference.get();
+            if (baseVideoPlayer == null) {
+                return;
+            }
             switch(msg.what) {
                 case MSG_PROCESS:
-                    mCurrentPosition = getCurrentPosition();
-                    mDuration = getDuration();
-                    mBufferPercent = getBufferPercentage();
-                    if(mCurrentPositionTv!= null) {
-                        mCurrentPositionTv.setText(Utils.stringForTime(mCurrentPosition));
-                    }
-                    if (mDurationTv != null) {
-                        mDurationTv.setText(Utils.stringForTime(mDuration));
-                    }
-                    if (mSeekbar != null) {
-                        if (mDuration > 0) {
-                            mSeekbar.setProgress(mCurrentPosition * SEEK_MAX / mDuration);
-                        } else {
-                            mSeekbar.setProgress(0);
-                        }
-                        if (mBufferPercent > 0) {
-                            mSeekbar.setSecondaryProgress(mBufferPercent * SEEK_MAX / 100);
-                        }
-                    }
-                    mHandler.sendEmptyMessageDelayed(MSG_PROCESS, 1000);
+                    baseVideoPlayer.setProgress();
+                    removeMessages(MSG_PROCESS);
+                    sendEmptyMessageDelayed(MSG_PROCESS, 900);
                     break;
-                case MSG_LOADING_PROCESS:
-                    if (mLoadWidget != null) {
-                        mLoadWidget.setPercent(getBufferPercentage());
-                        mHandler.sendEmptyMessageDelayed(MSG_LOADING_PROCESS, 100);
-                    }
+                case MSG_HIDE_CONTROLLER:
+                    baseVideoPlayer.hideController();
                     break;
                 default:
                     break;
             }
             super.handleMessage(msg);
         }
-    };
+    }
+
+    public void setProgress() {
+        mCurrentPosition = getCurrentPosition();
+        Log.d(TAG, "video setProgress() mCurrentPosition=" + mCurrentPosition);
+        if(mCurrentPositionTv!= null) {
+            mCurrentPositionTv.setText(Utils.stringForTime((int) mCurrentPosition));
+        }
+        if (mDurationTv != null) {
+            mDurationTv.setText(Utils.stringForTime(mDuration));
+        }
+        if (mSeekbar != null) {
+            if (mDuration > 0) {
+                mSeekbar.setProgress((int) (mCurrentPosition * SEEK_MAX / mDuration));
+            } else {
+                mSeekbar.setProgress(0);
+            }
+        }
+        if (mBottomProgressBar != null ){
+            if (mDuration > 0) {
+                mBottomProgressBar.setProgress((int) (mCurrentPosition * SEEK_MAX / mDuration));
+            } else {
+                mBottomProgressBar.setProgress(0);
+            }
+        }
+    }
+
 
     private Runnable mProgressRunnable = new Runnable() {
         @Override
@@ -333,6 +373,7 @@ public class BaseVideoPlayer extends FrameLayout implements
         NETWORK,
         VOLUME,
         LIGHT,
+        SEEK
     }
     private ArrayList<BaseWidget> mWidgetArrayList = new ArrayList<>();
 
@@ -343,6 +384,10 @@ public class BaseVideoPlayer extends FrameLayout implements
             case VOLUME:
                 mVolumeWidget = new OmVolumeWidget(layoutId);
                 mWidgetArrayList.add(mVolumeWidget);
+                break;
+            case SEEK:
+                mSeekWidget = new OmSeekWidget(layoutId);
+                mWidgetArrayList.add(mSeekWidget);
                 break;
             case LOADING:
                 mLoadWidget = new OmLoadWidget(layoutId);
@@ -359,8 +404,17 @@ public class BaseVideoPlayer extends FrameLayout implements
         }
     }
 
-    public BaseVideoPlayer setFull(boolean isFull) {
+    /**
+     * 自定义widget
+     * @param widget
+     */
+    public void registerWidget(BaseWidget widget) {
+        if (mWidgetArrayList != null) {
+            mWidgetArrayList.add(widget);
+        }
+    }
 
+    public BaseVideoPlayer setFull(boolean isFull) {
         this.isFull = isFull;
         return this;
     }
@@ -369,6 +423,20 @@ public class BaseVideoPlayer extends FrameLayout implements
         unRegisterReceiver();
         mSaveContext = mContext;
         mContext = context;
+        mScreenHeight = ScreenUtils.getScreenHeight(context);
+        mScreenWidth = ScreenUtils.getScreenWidth(context);
+
+        mActivity = null;
+        if (context instanceof Activity) {
+            mActivity = (Activity) context;
+        }
+        if (isFull) {
+            if (mGuestureListenr == null) {
+                mGuestureListenr = new VideoGestureListener(getContext(), new GestureListener());
+            }
+        } else {
+            mGuestureListenr = null;
+        }
     }
 
     public void setContentView(@LayoutRes int id) {
@@ -424,18 +492,30 @@ public class BaseVideoPlayer extends FrameLayout implements
 //        mLeftLayout = findViewById(R.id.left_layout);
 //        mRightLayout = findViewById(R.id.right_layout);
 
+
+
+        mBottomProgressBar = (ProgressBar) findViewById(R.id.video_bottom_seekbar);
+        if (mBottomProgressBar != null) {
+            mBottomProgressBar.setMax(SEEK_MAX);
+            if (mDuration > 0) {
+                mBottomProgressBar.setProgress((int) (mCurrentPosition * SEEK_MAX / mDuration));
+            } else {
+                mBottomProgressBar.setProgress(0);
+            }
+            mBottomProgressBar.setSecondaryProgress(mBufferPercent * SEEK_MAX / 100);
+        }
+
         if (mVolumeWidget != null) {
             for (BaseWidget widget : mWidgetArrayList) {
                 widget.attachTo(mVideoContainer);
             }
         }
-
-        mVideoContainer.setOnTouchListener(this);
+//        mVideoContainer.setOnTouchListener(this);
         mMediaPlayerManager.setParentView(mVideoContainer);
 
-//        if (mGuestureListenr == null) {
-//            mGuestureListenr = new VideoGestureListener(getContext(), new GestureListener());
-//        }
+        if (mGuestureListenr == null) {
+            mGuestureListenr = new VideoGestureListener(getContext(), new GestureListener());
+        }
         registerReceiver();
     }
 
@@ -498,6 +578,12 @@ public class BaseVideoPlayer extends FrameLayout implements
         Log.d(TAG, "video onPrepared: ");
         mCurrentState = STATE_PREPARED;
         start();
+
+//        int seekToPosition = mSeekWhenPrepared;  // mSeekWhenPrepared may be changed after seekTo() call
+//        if (seekToPosition != 0) {
+//            seekTo(seekToPosition);
+//        }
+        mDuration = getDuration();
     }
 
     @Override
@@ -574,12 +660,23 @@ public class BaseVideoPlayer extends FrameLayout implements
     }
 
     @Override
-    public boolean onTouch(View view, MotionEvent motionEvent) {
-        if (mIsControllerShowing) {
-
+    public boolean onTouchEvent(MotionEvent event) {
+        if ( event.getPointerCount() < 2) {
+            if (mGuestureListenr != null) {
+                mGuestureListenr.onTouchEvent(event);
+            } else {
+                switch (event.getAction()) {
+                    case MotionEvent.ACTION_UP:
+                        if (mIsControllerShowing) {
+                            hideController();
+                        } else {
+                            showController();
+                        }
+                        break;
+                }
+            }
         }
-        mIsControllerShowing = !mIsControllerShowing;
-        return false;
+        return true;
     }
 
     public void showController() {
@@ -589,7 +686,9 @@ public class BaseVideoPlayer extends FrameLayout implements
         if (mBottomLayout != null) {
             mBottomLayout.setVisibility(VISIBLE);
         }
-
+        if (mBottomProgressBar != null) {
+            mBottomProgressBar.setVisibility(GONE);
+        }
         mIsControllerShowing = true;
     }
 
@@ -600,7 +699,27 @@ public class BaseVideoPlayer extends FrameLayout implements
         if (mBottomLayout != null) {
             mBottomLayout.setVisibility(GONE);
         }
+        if (mBottomProgressBar != null) {
+            mBottomProgressBar.setVisibility(VISIBLE);
+        }
         mIsControllerShowing = false;
+
+    }
+
+    @Override
+    protected void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        if (mContext != null ) {
+            int screenHeight = ScreenUtils.getScreenHeight(mContext);
+            int screenWidth = ScreenUtils.getScreenWidth(mContext);
+            if (newConfig.orientation == Configuration.ORIENTATION_PORTRAIT) {
+                mScreenHeight = screenWidth;
+                mScreenWidth = screenHeight;
+            } else {
+                mScreenHeight = screenHeight;
+                mScreenWidth = screenWidth;
+            }
+        }
 
     }
 
@@ -608,19 +727,19 @@ public class BaseVideoPlayer extends FrameLayout implements
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         switch (keyCode) {
             case KeyEvent.KEYCODE_VOLUME_DOWN:
-                if (mVolumeWidget != null) {
-                    mVolumeWidget.setKeyVolumeChange(false);
+                if (isFull && mVolumeWidget != null) {
+                    mVolumeWidget.onKeyVolumeChange(false);
+                    return true;
                 }
-                return true;
+                break;
             case KeyEvent.KEYCODE_VOLUME_UP:
-                if (mVolumeWidget != null) {
-                    mVolumeWidget.setKeyVolumeChange(true);
+                if (isFull && mVolumeWidget != null) {
+                    mVolumeWidget.onKeyVolumeChange(true);
+                    return true;
                 }
-                return true;
-            case KeyEvent.KEYCODE_BACK:
-                if (isFull) {
-                    exitFull();
-                }
+                break;
+            default:
+                break;
         }
         return false;
     }
@@ -980,143 +1099,184 @@ public class BaseVideoPlayer extends FrameLayout implements
     public boolean onInterceptTouchEvent(MotionEvent ev) {
         return super.onInterceptTouchEvent(ev);
     }
-//
-//    private class GestureListener extends VideoGestureListener.SimpleOnGestureListener {
-//        private float MIN_DISTANCE = 6.0f;
-//        private boolean mIsFirstScroll = true;
-//        private float mDownX;
-//        private float mDownY;
-//        private GestureOrientation mGestureOrientation;
-//
-//        @Override
-//        public boolean onSingleTapConfirmed(MotionEvent e) {
-//            if (mIsControllerShowing) {
-//                hideController();
-//            } else {
-//                showController();
-//            }
-//            return true;
-//        }
-//
-//        @Override
-//        public void onLongPress(MotionEvent e) {
-//        }
-//
-//        @Override
-//        public boolean onDoubleTap(MotionEvent e) {
-//            return true;
-//        }
-//
-//
-//        @Override
-//        public boolean onDown(MotionEvent e) {
-//            Log.d(TAG, "GestureListener onDown:" + e);
-//            mDownX = e.getX();
-//            mDownY = e.getY();
-//            mSysBrightness = ScreenUtils.getCurScreenBrightness(getContext());
-//            mGestureOrientation = GestureOrientation.getInstance(e.getX(), e.getY());
-//            return true;
-//        }
-//
-//        @Override
-//        public boolean onUp(MotionEvent e) {
-////            if (mIsSetSeek) {
-////                mCurrentState = STATE_PLAYING;
-////                seekTo((int) mCurrentPosition);
-////                start();
-////                mHandler.removeMessages(MSG_HIDE_SEEK_VIEW);
-////                mHandler.sendEmptyMessageDelayed(MSG_HIDE_SEEK_VIEW, GESTURE_WIDGET_DISMISS_TIME);
-////            }
-//            if (mVolumeWidget != null && mVolumeWidget.isShown()) {
-//                mVolumeWidget.showWithAutoHide(1000);
-//            }
-//            if (mLightWidget != null && mLightWidget.isShown()) {
-//                mLightWidget.showWithAutoHide(1000);
-//            }
-//
-//            mIsFirstScroll = true;
-//            mDownX = -1.0f;
-//            mDownY = -1.0f;
-//            mOldX = -1;
-//            mOldY = -1;
-//            return true;
-//
-//        }
-//
-//        @Override
-//        public void onCancel(MotionEvent e) {
-//            Log.d(TAG, "video OnCancel");
-//            mIsFirstScroll = true;
-//            mDownX = -1.0f;
-//            mDownY = -1.0f;
-//        }
-//
-//        @Override
-//        public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
-//            if (!isFull) {
-//                return true;
-//            }
-//            try {
-//                if ((Math.abs(e2.getX() - mDownX) > MIN_DISTANCE || Math.abs(e2.getY() - mDownY) > MIN_DISTANCE)) {
-////                    mIsFirstScroll = false;
-//                    GestureOrientation.ScrollOrientation mScrollOrientation = mGestureOrientation.computeFirstAngle(e2.getX(), e2.getY());
-//
-//                    if (GestureOrientation.ScrollOrientation.SCROLL_INVALID == mScrollOrientation) {
-//
-//                    } else if (GestureOrientation.ScrollOrientation.SCROLL_HORIZONTAL == mScrollOrientation) {
-////                        if (mIsSetVolumeLight) {
-////                            return true;
-////                        }
-////                        if (mCurrentState != STATE_PLAYBACK_COMPLETED) {
-////                            hideController();
-////                        }
-////                        mIsSetSeek = true;
-////                        if (isPlaying()) {
-////                            pause();
-////                        }
-////                        onSeekbarProgressTouch(mSeekbar, e2);
-//                    } else {
-//                        if (e1.getY() < mScreenHeight * 0.1f || mIsSetSeek) {
-//                            return true;
-//                        }
-//                        mIsSetVolumeLight = true;
-//                        if (mControllerShowing) {
-//                            hideController();
-//                        }
-//                        if (e1.getX() > mScreenWidth * 0.5f) {
-//                            int scrollProgress = (int) (distanceY * SEEK_MAX / (mScreenHeight * 0.8));
-//                            mVolumeProgress += scrollProgress;
-//                            if (mVolumeProgress >= SEEK_MAX) {
-//                                mVolumeProgress = SEEK_MAX;
-//                            }
-//                            if (mVolumeProgress <= 0) {
-//                                mVolumeProgress = 0;
-//                            }
-//
-//                            mCurrentVolume = mVolumeProgress * mMaxVolume / SEEK_MAX;
-//                            changeVolume();
-//                            if (mVolumeWidget != null) {
-//                                mVolumeWidget.getVolume()
-//                            }
-//                        } else {
-//                            int scrollProgress = (int) (distanceY * SEEK_MAX / (mScreenHeight * 0.8));
-//                            mLightProgress += scrollProgress;
-//                            if (mLightProgress >= SEEK_MAX) {
-//                                mLightProgress = SEEK_MAX;
-//                            }
-//                            if (mLightProgress <= 0) {
-//                                mLightProgress = 0;
-//                            }
-//                            changeLight();
-//                        }
-//                    }
-//                }
-//            } catch (Exception e) {
-//                Log.e(TAG, "video onScroll Exception: " + e);
-//            }
-//            return true;
-//        }
-//    }
+
+
+    private void onSeekbarProgressTouch(SeekBar seekProgressView, MotionEvent event) {
+        if (seekProgressView == null || mDuration == 0) {
+            return;
+        }
+        if (mHandler != null) {
+            mHandler.removeMessages(MSG_PROCESS);
+        }
+
+        mSeekBarPosition = seekProgressView.getProgress();
+        mCurrentPosition = (int) ((mDuration * mSeekBarPosition) / SEEK_MAX);
+
+        if (mCurrentPositionTv != null) {
+            mCurrentPositionTv.setText(Utils.stringForTime((int) mCurrentPosition));
+        }
+
+        if (event.getAction() == MotionEvent.ACTION_MOVE) {
+            mCurrentX = event.getRawX();
+            mCurrentY = event.getRawY();
+            if (mOldX == -1) {
+                mOldX = mCurrentX;
+                mOldY = mCurrentY;
+            }
+            ONGESTURE_SEEK_TIME = mDuration;
+            int skipTime = (int) ((mCurrentX - mOldX) * ONGESTURE_SEEK_TIME / mScreenWidth);
+            mCurrentPosition += skipTime;
+            if (mCurrentPosition < 0) {
+                mCurrentPosition = 0;
+            } else if (mCurrentPosition > mDuration) {
+                mCurrentPosition = mDuration;
+            }
+            mSeekBarPosition = (int) (mCurrentPosition * SEEK_MAX / mDuration);
+            if (mSeekbar != null) {
+                mSeekbar.setProgress( mSeekBarPosition);
+            }
+            if (mSeekWidget != null) {
+                mSeekWidget.setCurrentPosition((int) mCurrentPosition);
+            }
+
+            if (mBottomProgressBar != null) {
+                mBottomProgressBar.setProgress(mSeekBarPosition);
+            }
+//            seekTo((int) mCurrentPosition);
+            mOldX = mCurrentX;
+            mOldY = mCurrentY;
+        }
+    }
+
+    private class GestureListener extends VideoGestureListener.SimpleOnGestureListener {
+        private float MIN_DISTANCE = 6.0f;
+        private boolean mIsFirstScroll = true;
+        private float mDownX;
+        private float mDownY;
+        private GestureOrientation mGestureOrientation;
+
+        @Override
+        public boolean onSingleTapConfirmed(MotionEvent e) {
+            if (mIsControllerShowing) {
+                hideController();
+            } else {
+                showController();
+            }
+            return true;
+        }
+
+        @Override
+        public void onLongPress(MotionEvent e) {
+        }
+
+        @Override
+        public boolean onDoubleTap(MotionEvent e) {
+            return true;
+        }
+
+
+        @Override
+        public boolean onDown(MotionEvent e) {
+            Log.d(TAG, "GestureListener onDown:" + e);
+            mDownX = e.getX();
+            mDownY = e.getY();
+            if (mLightWidget != null) {
+                mLightWidget.setCurrentBrightness(ScreenUtils.getCurScreenBrightness(getContext()));
+            }
+            if (mSeekWidget != null) {
+                mSeekWidget.setGestureDownPlayTime((int) mCurrentPosition, mDuration);
+            }
+            mGestureOrientation = GestureOrientation.getInstance(e.getX(), e.getY());
+            return true;
+        }
+
+        @Override
+        public boolean onUp(MotionEvent e) {
+            if (mIsSetSeek) {
+                mCurrentState = STATE_PLAYING;
+                seekTo((int) mCurrentPosition);
+                start();
+                if (mSeekWidget != null) {
+                    mSeekWidget.hide();
+                }
+            }
+            if (mIsSetVolumeLight) {
+                if (mVolumeWidget != null) {
+                    mVolumeWidget.hide();
+                }
+                if (mLightWidget != null) {
+                    mLightWidget.hide();
+                }
+            }
+            mIsFirstScroll = true;
+            mDownX = -1.0f;
+            mDownY = -1.0f;
+            mOldX = -1;
+            mOldY = -1;
+            mIsSetSeek = false;
+            mIsSetVolumeLight = false;
+            return true;
+
+        }
+
+        @Override
+        public void onCancel(MotionEvent e) {
+            Log.d(TAG, "video OnCancel");
+            mIsFirstScroll = true;
+            mDownX = -1.0f;
+            mDownY = -1.0f;
+        }
+
+        @Override
+        public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
+            if (!isFull) {
+                return true;
+            }
+            try {
+                if ((Math.abs(e2.getX() - mDownX) > MIN_DISTANCE || Math.abs(e2.getY() - mDownY) > MIN_DISTANCE)) {
+//                    mIsFirstScroll = false;
+                    GestureOrientation.ScrollOrientation mScrollOrientation = mGestureOrientation.computeFirstAngle(e2.getX(), e2.getY());
+                    mSeekBarPosition = mSeekbar.getProgress();
+
+                    if (GestureOrientation.ScrollOrientation.SCROLL_INVALID == mScrollOrientation) {
+
+                    } else if (GestureOrientation.ScrollOrientation.SCROLL_HORIZONTAL == mScrollOrientation) {
+                        if (mIsSetVolumeLight || mSeekWidget == null) {
+                            return true;
+                        }
+                        if (mCurrentState != STATE_PLAYBACK_COMPLETED) {
+                            hideController();
+                        }
+                        mIsSetSeek = true;
+                        if (isPlaying()) {
+                            pause();
+                        }
+                        onSeekbarProgressTouch(mSeekbar, e2);
+                    } else {
+                        if (e1.getY() < mScreenHeight * 0.1f || mIsSetSeek) {
+                            return true;
+                        }
+                        mIsSetVolumeLight = true;
+                        if (mIsControllerShowing) {
+                            hideController();
+                        }
+                        if (e1.getX() > mScreenWidth * 0.5f) {
+                            if (mVolumeWidget != null) {
+                                mVolumeWidget.onScrollVolumeChange((int) distanceY, mScreenHeight);
+                            }
+                        } else {
+                            if (mLightWidget != null) {
+                                mLightWidget.onScrollLightChange(mActivity, (int) distanceY, mScreenHeight);
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                Log.e(TAG, "video onScroll Exception: " + e);
+            }
+            return true;
+        }
+    }
 
     static class Builder {
         private MediaPlayerType mMediaPlayerType;
