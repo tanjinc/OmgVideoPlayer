@@ -97,7 +97,9 @@ public class OmVolumeWidget extends BaseWidget {
 //        } else {
 //            mVolumeImg.setImageResource(R.drawable.mz_video_player_toast_ic_volume_on);
 //        }
-        mVolumeProgressBar.setProgress(progress);
+        if (mVolumeProgressBar != null) {
+            mVolumeProgressBar.setProgress(progress);
+        }
         show();
     }
 

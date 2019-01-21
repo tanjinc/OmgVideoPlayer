@@ -1,11 +1,14 @@
 package com.tanjinc.omgvideoplayer.utils;
 
+import android.annotation.TargetApi;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.res.Resources;
+import android.os.Build;
 import android.provider.Settings;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.View;
 import android.view.Window;
 import android.view.WindowManager;
 
@@ -85,5 +88,17 @@ public class ScreenUtils {
             }
         }
         return 0;
+    }
+
+    @TargetApi(Build.VERSION_CODES.KITKAT)
+    public static void setFullScreen(Window window) {
+        if (window == null) {
+            return;
+        }
+        View decorView = window.getDecorView();
+        decorView.setSystemUiVisibility(
+                View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                        | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION // hide nav bar
+                        | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY |View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
     }
 }

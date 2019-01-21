@@ -36,6 +36,7 @@ import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.TextView;
 
+import com.tanjinc.omgvideoplayer.utils.AnimUtils;
 import com.tanjinc.omgvideoplayer.utils.ScreenUtils;
 import com.tanjinc.omgvideoplayer.utils.Utils;
 import com.tanjinc.omgvideoplayer.widget.BaseWidget;
@@ -123,7 +124,9 @@ public class BaseVideoPlayer extends FrameLayout implements
     //ui
     protected View mStartBtn;
     protected View mSwitchBtn;
+    protected View mExitFullBtn;
     protected View mCloseBtn;
+    protected View mBackBtn;
     protected View mSwitchFloatBtn;
     protected TextView mTitleTv;
     protected TextView mCurrentPositionTv;
@@ -140,6 +143,7 @@ public class BaseVideoPlayer extends FrameLayout implements
     private ViewGroup mVideoPlayerRoot;
 
     private static int SEEK_MAX = 1000;
+    protected int mDelayAutoHide = 5 * 1000; //5秒自动掩藏
 
 
     private boolean isFloat;
@@ -147,6 +151,7 @@ public class BaseVideoPlayer extends FrameLayout implements
     private boolean mScreenOn = true;
     private boolean mIsControllerShowing = true;
     private boolean mHaveRegister;
+    private boolean mNetworkWaring;
 
     private int mCurrentPosition;
     private int mDuration;
@@ -176,6 +181,7 @@ public class BaseVideoPlayer extends FrameLayout implements
     private Context mSaveContext;
     private Activity mActivity;
 
+    private Builder mBuilder;
 
     private IMediaPlayerControl mMediaPlayerManager;
     private static BaseVideoPlayer sBaseVideoPlayer = null;
@@ -190,7 +196,7 @@ public class BaseVideoPlayer extends FrameLayout implements
 
     public BaseVideoPlayer(Context context, Builder builder) {
         super(context);
-        mContext = context;
+        setContext(context);
         if (builder.getMediaPlayerType() != null) {
             mMediaPlayerType = builder.getMediaPlayerType();
         }
@@ -204,6 +210,7 @@ public class BaseVideoPlayer extends FrameLayout implements
         mMiniLayoutId = builder.getMiniId();
         mFullLayoutId = builder.getFullId();
         mFloatLayoutId = builder.getFloatId();
+        mBuilder = builder;
 
         mAudioManager = (AudioManager) getContext().getSystemService(Context.AUDIO_SERVICE);
 
@@ -458,6 +465,11 @@ public class BaseVideoPlayer extends FrameLayout implements
             mSwitchBtn.setOnClickListener(this);
         }
 
+        mExitFullBtn = findViewById(R.id.exit_full_btn);
+        if (mExitFullBtn != null) {
+            mExitFullBtn.setOnClickListener(this);
+        }
+
         mSwitchFloatBtn = findViewById(R.id.switch_float_btn);
         if (mSwitchFloatBtn != null) {
             mSwitchFloatBtn.setOnClickListener(this);
@@ -482,6 +494,12 @@ public class BaseVideoPlayer extends FrameLayout implements
             mSeekbar.setOnSeekBarChangeListener(this);
         }
 
+        mBackBtn = findViewById(R.id.video_back_btn);
+        if (mBackBtn != null) {
+            mBackBtn.setOnClickListener(this);
+        }
+
+
         mCloseBtn = findViewById(R.id.video_close_btn);
         if (mCloseBtn != null) {
             mCloseBtn.setOnClickListener(this);
@@ -505,10 +523,8 @@ public class BaseVideoPlayer extends FrameLayout implements
             mBottomProgressBar.setSecondaryProgress(mBufferPercent * SEEK_MAX / 100);
         }
 
-        if (mVolumeWidget != null) {
-            for (BaseWidget widget : mWidgetArrayList) {
-                widget.attachTo(mVideoContainer);
-            }
+        for (BaseWidget widget : mWidgetArrayList) {
+            widget.attachTo(mVideoContainer);
         }
 //        mVideoContainer.setOnTouchListener(this);
         mMediaPlayerManager.setParentView(mVideoContainer);
@@ -517,6 +533,7 @@ public class BaseVideoPlayer extends FrameLayout implements
             mGuestureListenr = new VideoGestureListener(getContext(), new GestureListener());
         }
         registerReceiver();
+        showController();
     }
 
 
@@ -526,7 +543,7 @@ public class BaseVideoPlayer extends FrameLayout implements
                 mContext.registerReceiver(mNetworkReceiver, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
                 mHaveRegister = true;
             } catch (Exception e) {
-                Log.e(TAG, "video registerReceiver: ", e);
+                Log.d(TAG, "video registerReceiver: ", e);
             }
         }
     }
@@ -537,7 +554,7 @@ public class BaseVideoPlayer extends FrameLayout implements
                 mContext.unregisterReceiver(mNetworkReceiver);
                 mHaveRegister = false;
             } catch (Exception e) {
-                Log.e(TAG, "video unRegisterReceiver: ", e);
+                Log.d(TAG, "video unRegisterReceiver: ", e);
             }
         }
     }
@@ -577,7 +594,11 @@ public class BaseVideoPlayer extends FrameLayout implements
     public void onPrepared() {
         Log.d(TAG, "video onPrepared: ");
         mCurrentState = STATE_PREPARED;
-        start();
+        if (mNetworkWarnWidget != null && mNetworkWarnWidget.isShown()) {
+            pause();
+        } else {
+            start();
+        }
 
 //        int seekToPosition = mSeekWhenPrepared;  // mSeekWhenPrepared may be changed after seekTo() call
 //        if (seekToPosition != 0) {
@@ -604,6 +625,8 @@ public class BaseVideoPlayer extends FrameLayout implements
             switchToFull();
         } else if (id == R.id.video_close_btn){
             onDestroy();
+        } else if (id == R.id.exit_full_btn || id == R.id.video_back_btn) {
+
         } else if (id == R.id.switch_float_btn) {
             //悬浮窗
             startFloat(new FloatWindowOption()
@@ -681,7 +704,8 @@ public class BaseVideoPlayer extends FrameLayout implements
 
     public void showController() {
         if (mTopLayout != null) {
-            mTopLayout.setVisibility(VISIBLE);
+            AnimUtils.showView(mTopLayout);
+//            mTopLayout.setVisibility(VISIBLE);
         }
         if (mBottomLayout != null) {
             mBottomLayout.setVisibility(VISIBLE);
@@ -689,7 +713,21 @@ public class BaseVideoPlayer extends FrameLayout implements
         if (mBottomProgressBar != null) {
             mBottomProgressBar.setVisibility(GONE);
         }
+        setStatusBarVisible(true);
         mIsControllerShowing = true;
+        mHandler.removeMessages(MSG_HIDE_CONTROLLER);
+        mHandler.sendEmptyMessageDelayed(MSG_HIDE_CONTROLLER, mDelayAutoHide);
+    }
+
+    private void setStatusBarVisible(boolean visible) {
+        if (mActivity != null && isFull && mBuilder.getShowStatusBar()) {
+            if (visible) {
+                mActivity.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+            } else {
+                mActivity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS
+                        |WindowManager.LayoutParams.FLAG_FULLSCREEN);
+            }
+        }
     }
 
     public void hideController() {
@@ -702,6 +740,7 @@ public class BaseVideoPlayer extends FrameLayout implements
         if (mBottomProgressBar != null) {
             mBottomProgressBar.setVisibility(VISIBLE);
         }
+        setStatusBarVisible(false);
         mIsControllerShowing = false;
 
     }
@@ -784,7 +823,7 @@ public class BaseVideoPlayer extends FrameLayout implements
     }
 
     public void exitFull() {
-        if (mContext == null) {
+        if (mContext != null) {
             ((Activity)mContext).finish();
         }
         unRegisterReceiver();
@@ -795,7 +834,7 @@ public class BaseVideoPlayer extends FrameLayout implements
         mContext = mSaveContext;
         mSaveContext = null;
         setRootView(mSaveVideoRoot);
-        setContentView(R.layout.om_video_mini_layout);
+        setContentView(mMiniLayoutId);
         releaseStaticPlayer();
     }
 
@@ -879,14 +918,14 @@ public class BaseVideoPlayer extends FrameLayout implements
     }
 
     public void onDestroy() {
-        mHandler.removeMessages(MSG_PROCESS);
-        mHandler.removeCallbacks(mProgressRunnable);
+        mHandler.removeCallbacksAndMessages(null);
         if (isFloat && mFloatService != null) {
             exitFloat();
         }
 
         if (mWidgetArrayList != null) {
             for (BaseWidget widget : mWidgetArrayList) {
+                widget.detach();
                 widget.release();
             }
         }
@@ -901,6 +940,7 @@ public class BaseVideoPlayer extends FrameLayout implements
         releaseStaticPlayer();
         setScreenOn(false);
         mContext = null;
+        mActivity = null;
         mSaveContext = null;
         mSaveVideoRoot = null;
     }
@@ -911,8 +951,23 @@ public class BaseVideoPlayer extends FrameLayout implements
         if (mMediaPlayerManager == null) {
             initMediaPlayer();
         }
+        if (Utils.isMobileNet(mContext)
+                && mNetworkWarnWidget != null
+                && !mNetworkWarnWidget.isConfirm()) {
+            mNetworkWarnWidget.show();
+            mNetworkWarnWidget.setVideoUrl(videoPath);
+            Log.d(TAG, "video setVideoUrl: is MobileNet");
+            return;
+        }
         mMediaPlayerManager.setVideoUrl(videoPath);
         showLoading();
+    }
+
+    /**
+     * 设置码率
+     */
+    public void setRatios() {
+
     }
 
     /**
@@ -1278,12 +1333,23 @@ public class BaseVideoPlayer extends FrameLayout implements
         }
     }
 
-    static class Builder {
+    public static class Builder {
         private MediaPlayerType mMediaPlayerType;
         private DisplayType displayType;
         private VideoViewType videoViewType;
 
         private @LayoutRes int miniId, fullId, floatId;
+        private boolean showStatusBar;
+
+
+        public Builder setShowStatusBar(boolean showStatusBar) {
+            this.showStatusBar = showStatusBar;
+            return this;
+        }
+
+        public boolean getShowStatusBar() {
+            return showStatusBar;
+        }
 
         public Builder setMiniLayoutId(@LayoutRes int id) {
             miniId = id;

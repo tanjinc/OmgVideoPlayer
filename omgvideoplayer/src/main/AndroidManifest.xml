@@ -9,6 +9,7 @@
 
 
     <activity android:name="com.tanjinc.omgvideoplayer.VideoWindowActivity"
+        android:windowSoftInputMode="stateVisible|adjustPan"
         android:configChanges="orientation|keyboard|keyboardHidden|screenSize">
     </activity>
     <service android:name="com.tanjinc.omgvideoplayer.FloatWindowService">

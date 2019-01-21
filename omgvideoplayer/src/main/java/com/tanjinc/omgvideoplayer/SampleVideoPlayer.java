@@ -24,6 +24,8 @@ public class SampleVideoPlayer extends BaseVideoPlayer{
 
         registerWidget(WidgetType.LOADING, R.layout.om_video_loading_view);
         registerWidget(WidgetType.VOLUME, R.layout.om_volume_info_layout);
+        registerWidget(WidgetType.NETWORK, R.layout.om_video_network_warn_layout);
+        registerWidget(WidgetType.LIGHT, R.layout.om_light_info_layout);
     }
 
 }

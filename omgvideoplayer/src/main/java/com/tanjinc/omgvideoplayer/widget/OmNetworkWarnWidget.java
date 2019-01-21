@@ -14,6 +14,9 @@ public class OmNetworkWarnWidget extends BaseWidget {
     private View mConfirmBtn;
     private View mCancelBtn;
 
+    private String mPaddingVideoUrl;
+    private boolean mHaveConfirm;
+
     public OmNetworkWarnWidget(BaseVideoPlayer videoPlayer, int layoutId) {
         super(videoPlayer, layoutId);
     }
@@ -45,6 +48,10 @@ public class OmNetworkWarnWidget extends BaseWidget {
     }
 
 
+    public void setVideoUrl(String url) {
+        mPaddingVideoUrl = url;
+    }
+
     public void setWarningString(String string) {
         if (mWarnTV != null) {
             mWarnTV.setText(string);
@@ -53,11 +60,21 @@ public class OmNetworkWarnWidget extends BaseWidget {
     /**
      * 确认
      */
-    public void confirm() {
+    private void confirm() {
         if (getBaseVideoPlayer() != null) {
-            getBaseVideoPlayer().onResume();
+            if (mPaddingVideoUrl != null) {
+                mHaveConfirm = true;
+                getBaseVideoPlayer().setVideoUrl(mPaddingVideoUrl);
+                mPaddingVideoUrl = null;
+            } else {
+                getBaseVideoPlayer().onResume();
+            }
         }
         hide();
+    }
+
+    public boolean isConfirm() {
+        return mHaveConfirm;
     }
 
     /**

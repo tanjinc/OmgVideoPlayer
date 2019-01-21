@@ -3,14 +3,21 @@ package com.tanjinc.omgvideoplayer;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.KeyEvent;
+import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.view.WindowManager;
+
+import com.tanjinc.omgvideoplayer.utils.ScreenUtils;
 
 
 public class VideoWindowActivity extends AppCompatActivity {
+    private static final String TAG = "VideoWindowActivity";
 
     private String mAction = "";
     private BaseVideoPlayer mBaseVideoPlayer;
@@ -19,7 +26,10 @@ public class VideoWindowActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        Window window = getWindow();
+        ScreenUtils.setFullScreen(window);
         setContentView(R.layout.om_video_window_activity_layout);
+
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
         mAction = getIntent().getStringExtra("action");
@@ -31,17 +41,19 @@ public class VideoWindowActivity extends AppCompatActivity {
         mCurrentState = getIntent().getIntExtra("current_state", 0);
 
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_USER_LANDSCAPE);
+        Log.d(TAG, "onCreate: ");
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        if (mBaseVideoPlayer != null) {
-            if (mCurrentState == BaseVideoPlayer.STATE_PLAYING) {
-                mBaseVideoPlayer.start();
-            } else {
-                mBaseVideoPlayer.pause();
-            }
+        if (mBaseVideoPlayer == null) {
+            return;
+        }
+        if (isFinishing()) {
+            mBaseVideoPlayer.resetRootView();
+        } else {
+            mBaseVideoPlayer.onPause();
         }
     }
 
@@ -49,11 +61,7 @@ public class VideoWindowActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         if (mBaseVideoPlayer != null) {
-            if (mCurrentState == BaseVideoPlayer.STATE_PLAYING) {
-                mBaseVideoPlayer.start();
-            } else {
-                mBaseVideoPlayer.pause();
-            }
+            mBaseVideoPlayer.onResume();
         }
     }
 
@@ -77,13 +85,15 @@ public class VideoWindowActivity extends AppCompatActivity {
         if (!mAction.equals(BaseVideoPlayer.ACTION_SWITCH_TO_FULL)) {
             BaseVideoPlayer.releaseStaticPlayer();
         }
-        mBaseVideoPlayer.resetRootView();
+        mBaseVideoPlayer = null;
+        Log.d(TAG, "onDestroy: ");
         super.onDestroy();
     }
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
+        Log.d(TAG, "onConfigurationChanged: ");
     }
     @Override
     public void finish() {
