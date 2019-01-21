@@ -1,5 +1,7 @@
 package com.tanjinc.omgvideoplayer.listPage;
 
+import android.graphics.Color;
+import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -50,11 +52,20 @@ public class VideoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
     public RecyclerView.ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         switch (viewType) {
             case TYPE_A:
-                break;
+                TextView viewA = new TextView(parent.getContext());
+                viewA.setText("AA");
+                viewA.setBackgroundColor(Color.RED);
+                return new HolderA(viewA);
             case TYPE_B:
-                break;
+                TextView viewB = new TextView(parent.getContext());
+                viewB.setText("BB");
+                viewB.setBackgroundColor(Color.BLUE);
+                return new HolderB(viewB);
             case TYPE_C:
-                break;
+                TextView viewC = new TextView(parent.getContext());
+                viewC.setText("CC");
+                viewC.setBackgroundColor(Color.YELLOW);
+                return new HolderA(viewC);
             case TYPE_VIDEO:
                 View view = LayoutInflater.from(parent.getContext()).inflate(R.layout.video_list_item, parent, false);
                 return new VideoViewHolder(view);
@@ -127,10 +138,10 @@ public class VideoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
 
     @Override
     public int getItemViewType(int position) {
-        if (position == getItemCount() - 1) {
+        if (position >= mDataArray.size()) {
             return 0;
         }
-        return super.getItemViewType(position);
+        return mDataArray.get(position).getType();
     }
 
     public void setOnItemClickListener(OnItemClickListener onItemClickListener) {
@@ -141,4 +152,23 @@ public class VideoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> 
         void OnItemClick(int position);
     }
 
+    @Override
+    public void onAttachedToRecyclerView(RecyclerView recyclerView) {
+        super.onAttachedToRecyclerView(recyclerView);
+
+        RecyclerView.LayoutManager layout = recyclerView.getLayoutManager();
+        if (layout != null && layout instanceof GridLayoutManager) {
+            final GridLayoutManager manager = (GridLayoutManager) layout;
+            manager.setSpanSizeLookup(new GridLayoutManager.SpanSizeLookup() {
+                @Override
+                public int getSpanSize(int position) {
+                    int type = getItemViewType(position);
+                    if (type == TYPE_A ) {
+                        return manager.getSpanCount();
+                    }
+                    return 1;
+                }
+            });
+        }
+    }
 }

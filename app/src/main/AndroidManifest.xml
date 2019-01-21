@@ -34,7 +34,8 @@
         <activity android:name="com.tanjinc.omgvideoplayer.listPage.ListVideoActivity"
             android:screenOrientation="portrait">
         </activity>
-        <activity android:name="com.tanjinc.omgvideoplayer.detailPage.DetailActivity">
+        <activity android:name="com.tanjinc.omgvideoplayer.detailPage.DetailActivity"
+            >
         </activity>
         <activity android:name="com.tanjinc.omgvideoplayer.floatPage.FloatDemoActivity">
         </activity>

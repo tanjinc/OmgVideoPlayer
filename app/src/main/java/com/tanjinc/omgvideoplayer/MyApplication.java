@@ -1,6 +1,7 @@
 package com.tanjinc.omgvideoplayer;
 
 import android.app.Application;
+import android.support.multidex.MultiDexApplication;
 
 import com.facebook.stetho.Stetho;
 import com.squareup.leakcanary.LeakCanary;
@@ -8,7 +9,7 @@ import com.squareup.leakcanary.LeakCanary;
 /**
  * Created by tanjincheng on 17/7/1.
  */
-public class MyApplication extends Application {
+public class MyApplication extends MultiDexApplication {
 
     private static MyApplication sMyApplication;
 

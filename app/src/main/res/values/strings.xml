@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">OmgVideoPlayer</string>
+    <string name="live_chat_welcome_word">欢迎是%1$s，进入直播间%2$s游戏超人提倡绿色、正能量直播，禁止发布违法、违规、低俗等不良信息。祝您观看愉快！</string>
 </resources>

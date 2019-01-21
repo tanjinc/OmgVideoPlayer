@@ -1,9 +1,11 @@
 package com.tanjinc.omgvideoplayer.listPage;
 
+import android.graphics.Rect;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.Fragment;
 import android.support.v4.widget.SwipeRefreshLayout;
+import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -44,7 +46,8 @@ public class VideoFragment extends Fragment implements VideoContract.View {
         View view = inflater.inflate(R.layout.video_list_layout, container, false);
         mAdapter = new VideoAdapter();
         mRecyclerView = (RecyclerView) view.findViewById(R.id.recycler_view);
-        mRecyclerView.setLayoutManager(new LinearLayoutManager(getContext(), LinearLayoutManager.VERTICAL, false));
+        mRecyclerView.setLayoutManager(new GridLayoutManager(getContext(), 4));
+        mRecyclerView.addItemDecoration(new SpaceItemDecoration(20));
         mRecyclerView.setAdapter(mAdapter);
         mRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
             int lastVisibleItem;
@@ -169,5 +172,22 @@ public class VideoFragment extends Fragment implements VideoContract.View {
             }
         });
         currentVH.setActive(true);
+    }
+
+    public static class SpaceItemDecoration extends RecyclerView.ItemDecoration {
+        private int mSpace;
+
+        public SpaceItemDecoration(int space) {
+            this.mSpace = space;
+        }
+
+        @Override
+        public void getItemOffsets(Rect outRect, View view, RecyclerView parent, RecyclerView.State state) {
+            outRect.left = mSpace;
+            RecyclerView.ViewHolder viewHolder = parent.getChildViewHolder(view);
+            if (viewHolder instanceof HolderA) {
+
+            }
+        }
     }
 }
