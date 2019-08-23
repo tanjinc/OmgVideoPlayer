@@ -35,6 +35,7 @@
             android:screenOrientation="portrait">
         </activity>
         <activity android:name="com.tanjinc.omgvideoplayer.detailPage.DetailActivity"
+            android:screenOrientation="sensor"
             >
         </activity>
         <activity android:name="com.tanjinc.omgvideoplayer.floatPage.FloatDemoActivity">

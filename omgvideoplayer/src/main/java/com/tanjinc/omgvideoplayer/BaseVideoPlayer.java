@@ -35,6 +35,7 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.tanjinc.omgvideoplayer.utils.AnimUtils;
 import com.tanjinc.omgvideoplayer.utils.ScreenUtils;
@@ -630,10 +631,10 @@ public class BaseVideoPlayer extends FrameLayout implements
         } else if (id == R.id.switch_float_btn) {
             //悬浮窗
             startFloat(new FloatWindowOption()
-                    .setWidth(600)
-                    .setHeight(400)
-                    .setTargetX(500)
-                    .setTargetY(600));
+                    .setWidth(150)
+                    .setHeight(150)
+                    .setTargetX(0)
+                    .setTargetY(0));
         }
     }
 
@@ -699,7 +700,7 @@ public class BaseVideoPlayer extends FrameLayout implements
                 }
             }
         }
-        return true;
+        return false;
     }
 
     public void showController() {
@@ -852,6 +853,7 @@ public class BaseVideoPlayer extends FrameLayout implements
         }
     };
 
+    private FloatWindowOption mFloatWindowOp;
     public void startFloat(FloatWindowOption option) {
         Activity activity = Utils.scanForActivity(mContext);
         if (activity == null) {
@@ -859,8 +861,10 @@ public class BaseVideoPlayer extends FrameLayout implements
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (!Settings.canDrawOverlays(mContext)) {
+                mFloatWindowOp = option;
                 activity.startActivityForResult(
                         new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:" + activity.getPackageName())), 0);
+                return;
             }
         }
 
@@ -871,17 +875,29 @@ public class BaseVideoPlayer extends FrameLayout implements
         if (option.getLayoutId() == 0) {
             option.setFloatLayoutId(mFloatLayoutId);
         }
-        if (option.getHeight() == 0); {
-            option.setHeight(getMeasuredHeight());
-        }
-        if (option.getWidth() == 0) {
-            option.setWidth(getMeasuredWidth());
-        }
+//        if (option.getHeight() == 0); {
+//            option.setHeight(getMeasuredHeight());
+//        }
+//        if (option.getWidth() == 0) {
+//            option.setWidth(getMeasuredWidth());
+//        }
         intent.putExtra(FloatWindowOption.NAME, option);
         mContext.bindService(intent, mServiceConnection, Context.BIND_AUTO_CREATE);
         isFloat = true;
         if (mOnFloatListener != null) {
             mOnFloatListener.startFloat();
+        }
+    }
+
+
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        if (requestCode == 0) {
+            if (!Settings.canDrawOverlays(mContext)) {
+                Toast.makeText(mContext, "授权失败", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(mContext, "授权成功", Toast.LENGTH_SHORT).show();
+                startFloat(mFloatWindowOp);
+            }
         }
     }
 

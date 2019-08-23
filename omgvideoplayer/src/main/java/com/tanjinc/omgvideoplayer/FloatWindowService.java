@@ -69,9 +69,13 @@ public class FloatWindowService extends Service {
         mRootLayoutParams = new FrameLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
         mWindowManagerLp = new WindowManager.LayoutParams();
         mWindowManagerLp.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
-        mWindowManagerLp.type = WindowManager.LayoutParams.TYPE_TOAST;
-        if (Build.VERSION.SDK_INT >= 19) {
-            mWindowManagerLp.type = WindowManager.LayoutParams.TYPE_TOAST;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            //可延伸到刘海区域内
+            mWindowManagerLp.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+        }
+        mWindowManagerLp.type = WindowManager.LayoutParams.TYPE_PHONE;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            mWindowManagerLp.type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
         } else {
             mWindowManagerLp.type = WindowManager.LayoutParams.TYPE_SYSTEM_ALERT;
         }

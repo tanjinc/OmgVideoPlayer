@@ -1,6 +1,8 @@
 package com.tanjinc.omgvideoplayer.detailPage;
 
+import android.content.Intent;
 import android.graphics.Color;
+import android.support.annotation.Nullable;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.TabLayout;
 import android.support.v4.app.Fragment;
@@ -46,6 +48,10 @@ public class DetailActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_detail);
         mScrollView = (NestedScrollView) findViewById(R.id.scroller_view);
+        WindowManager.LayoutParams lp = getWindow().getAttributes();
+        lp.layoutInDisplayCutoutMode = WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+        getWindow().setAttributes(lp);
+
         getWindow().setBackgroundDrawableResource(android.R.color.transparent);
         FrameLayout videoRoot = (FrameLayout) findViewById(R.id.video_root_layout);
 
@@ -74,6 +80,12 @@ public class DetailActivity extends AppCompatActivity {
 
     private void openVideo() {
 
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        mVideoPlayer.onActivityResult(requestCode, resultCode, data);
     }
 
     @Override

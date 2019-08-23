@@ -30,8 +30,8 @@ public class MyVideoPlayer extends BaseVideoPlayer {
         registerWidget(WidgetType.VOLUME, com.tanjinc.omgvideoplayer.R.layout.om_volume_info_layout);
         registerWidget(WidgetType.NETWORK, com.tanjinc.omgvideoplayer.R.layout.om_video_network_warn_layout);
         registerWidget(WidgetType.LIGHT, com.tanjinc.omgvideoplayer.R.layout.om_light_info_layout);
-        mLiveDamnuWidget = new LiveDamnuWidget();
-        registerWidget(mLiveDamnuWidget);
+//        mLiveDamnuWidget = new LiveDamnuWidget();
+//        registerWidget(mLiveDamnuWidget);
     }
 
     @Override
@@ -49,7 +49,7 @@ public class MyVideoPlayer extends BaseVideoPlayer {
         }
         mDanmuEt = (EditText) findViewById(R.id.danmuEditView);
         mBottomDanmu = findViewById(R.id.full_screen_danmu_input_layout);
-        mLiveDamnuWidget.addDanmaku(true);
+//        mLiveDamnuWidget.addDanmaku(true);
     }
 
     /**
@@ -87,7 +87,7 @@ public class MyVideoPlayer extends BaseVideoPlayer {
     @Override
     public void showController() {
         super.showController();
-        mLiveDamnuWidget.addDanmaku(true);
+//        mLiveDamnuWidget.addDanmaku(true);
     }
 
     @Override
